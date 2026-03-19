@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import { PointerLockControls } from '@react-three/drei';
-import { Vector3, Euler } from 'three';
+import { Vector3 } from 'three';
 import { useSphere } from '@react-three/cannon';
 
 const FLYING_SPEED = 60;
@@ -63,21 +63,21 @@ export const PlayerController = () => {
     const { forward, backward, left, right, up, down, boost } = keys.current;
     const speed = boost ? FLYING_SPEED * 2 : FLYING_SPEED;
 
-    const hDir = new Vector3();
-    if (forward) hDir.z -= 1;
-    if (backward) hDir.z += 1;
-    if (left) hDir.x -= 1;
-    if (right) hDir.x += 1;
-    if (hDir.length() > 0) {
-      hDir.normalize().multiplyScalar(speed);
-      hDir.applyEuler(new Euler(0, camera.rotation.y, 0));
-    }
+    const lookDir = new Vector3();
+    camera.getWorldDirection(lookDir);
 
-    let vy = 0;
-    if (up) vy = speed * 0.5;
-    if (down) vy = -speed * 0.5;
+    const rightDir = new Vector3();
+    rightDir.crossVectors(lookDir, new Vector3(0, 1, 0)).normalize();
 
-    api.velocity.set(hDir.x, vy, hDir.z);
+    const vel = new Vector3();
+    if (forward) vel.addScaledVector(lookDir, speed);
+    if (backward) vel.addScaledVector(lookDir, -speed);
+    if (left) vel.addScaledVector(rightDir, -speed);
+    if (right) vel.addScaledVector(rightDir, speed);
+    if (up) vel.y += speed * 0.5;
+    if (down) vel.y -= speed * 0.5;
+
+    api.velocity.set(vel.x, vel.y, vel.z);
     camera.position.set(pos.current[0], pos.current[1] + 1, pos.current[2]);
 
     if (pos.current[1] < GROUND_Y - 1) {
