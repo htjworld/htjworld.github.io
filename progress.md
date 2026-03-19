@@ -1,41 +1,50 @@
-# htjworld — progress.md
+# htjworld — progress.md (cleanup)
 
 ## 현재 상태
-🟢 Block 1~13 전체 구현 완료
-
-## 다음 시작
-npx serve . 로컬 테스트 후 git push 배포
+🟢 완료
 
 ---
 
 ## 체크리스트
 
-### Phase 1 — 씬 기본
-- [x] Block 1: Import + Renderer + Scene
-- [x] Block 2: Sky 셰이더 + 조명
-- [x] Block 3: Stars/Snow 파티클 + 메인 바닥
+### Phase 0 — 코드 파악
+- [x] 전체 코드 구조 깊게 읽기
+- [x] 섹션 7 판단 항목 확인 후 사용자에게 질문 및 확인
 
-### Phase 2 — 도시 + 빌딩 시스템
-- [x] Block 4: 배경 도시 (buildBackgroundCity)
-- [x] Block 5: Canvas 텍스처 유틸 + 캐시 (makeSignTex)
-- [x] Block 6: AdBoard 함수 (makeAdBoard)
-- [x] Block 7: disabled 빌딩 InstancedMesh (buildDisabledInstances)
-- [x] Block 8: 도로 + 타운 표지판 (buildRoads, buildTownSign)
-- [x] Block 9: 타운 빌딩 배치 (buildTown × 3 + surfaces 배열)
+### Phase 1 — 파일 정리
+- [x] public/vite.svg 삭제 + index.html favicon 참조 제거
+- [x] src/assets/ 빈 디렉토리 삭제
+- [x] index.html title → htjworld
+- [x] README.md → htjworld 소개로 교체
+- [x] .gitignore 업데이트 (.claude/ 포함)
+- [x] cleanup-plan.md 삭제 (정리 완료)
 
-### Phase 3 — 플레이어 + 조작
-- [x] Block 10: player 더미 Object3D
-- [x] Block 11: PointerLockControls + 입력
-- [x] Block 12: Raycaster + HUD DOM
+### Phase 2 — 기능 제거
+- [x] 적(Enemy) 시스템 제거 — 이미 없음
+- [x] 총쏘기 시스템 제거 — 이미 없음
+- [x] 탱크 모드 제거 — 이미 없음
+- [x] 걷기 모드 제거 — 이미 없음
+- [x] 신 모드 제거 — 이미 없음
+- [x] 모드 전환 시스템 전체 제거 — 이미 없음
 
-### Phase 4 — 게임 루프 + 배포
-- [x] Block 13: tick() (이동, starsPoints 추적, Raycaster hover, HUD)
-- [ ] npx serve . 로컬 테스트
-- [ ] git push 배포
+### Phase 3 — 맵 통일
+- [x] 크리에이티브/서바이벌 분기 로직 제거 — 이미 없음
+- [x] 전체 맵 날기 모드로 통일 — PlayerController 날기 전용
+- [x] 맵 전환 기능 — 현재 1개 맵 유지 (4개 맵은 추후 추가 예정)
+
+### Phase 4 — 배포 설정
+- [x] .github/workflows/deploy.yml 생성
+- [x] vite.config.ts base: '/' 설정
+- [x] uuid 패키지 제거 (미사용 확인)
+- [x] npm run build 빌드 테스트 — 성공 ✅
 
 ---
 
 ## 메모
-- 2026-03-19: Block 1~13 전체를 index.html 단일 파일에 조립 완료
-- config.js 신규 생성 (plan2.md 스펙 그대로)
-- img/.gitkeep 없어도 동작 (imageUrl: null → Canvas 폴백)
+- Phase 2/3 작업 대부분은 airplane-blog-ver2 커밋에서 이미 처리됨
+- 섹션 7.1: 물리 엔진 없음, 날기는 순수 camera 조작
+- 섹션 7.2: 상태 관리 없음 (zustand/context 미사용), 모두 local refs
+- 섹션 7.3: 맵 1개 유지로 결정. 4개 맵은 나중에 추가 예정
+- 섹션 7.4: base '/' + GitHub Actions gh-pages 방식으로 확정
+- 빌드 경고: JS 번들 1MB (Three.js 특성상 정상, 빌드 실패 아님)
+- 배포 후 GitHub 설정 필요: Settings → Pages → Source를 gh-pages 브랜치로 변경
