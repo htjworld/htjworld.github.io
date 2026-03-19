@@ -1,42 +1,42 @@
 # htjworld — Progress
 
 ## 현재 상태
-🟡 구현 완료 (배포 대기)
+🔴 미시작 (plan2 기준 새로 구현)
 
-## 다음 시작 항목
-github pages push 후 배포 확인
+## 참고 문서
+- airplane-blog-plan2.md — 전체 스펙 + 실제 구현 코드
+- CLAUDE.md — 규칙
+
+## 다음 시작
+airplane-blog-plan2.md의 Block 1부터 순서대로
 
 ---
 
-## MVP 체크리스트
+## 구현 체크리스트
 
-- [x] Three.js 씬 기본 구성 (renderer, camera, lighting)
-- [x] 3개 타운 평면 + 색상 구분
-- [x] 빌딩 6슬롯 × 3타운 = 18개 빌딩
-- [x] config.js 기반 enabled/disabled 빌딩 시스템
-- [x] Canvas 텍스처로 전광판 자동 생성
-- [x] WASD 지상 이동
-- [x] Space 더블탭 비행 전환
-- [x] 비행 중 Space(상승) / Shift+Space(하강)
-- [x] 3인칭 카메라 (플레이어 추적)
-- [x] Raycaster Hover 효과 (빌딩 올라오기 + 툴팁)
-- [x] Raycaster 클릭 → 링크 이동
-- [x] HUD (타운명 + 비행/지상 모드)
-- [x] 온보딩 팝업
-- [x] Stars + Fog 분위기
-- [ ] github.io 배포 확인
+### Phase 1 — 씬 기본
+- [ ] Block 1: Import + Renderer + Scene
+- [ ] Block 2: 조명
+- [ ] Block 3: Stars + 메인 바닥
+
+### Phase 2 — 빌딩 시스템
+- [ ] Block 4: Canvas 텍스처 유틸 + 캐시
+- [ ] Block 5: makeAdBoard() (Frame + Surface, MeshBasicMaterial)
+- [ ] Block 6: buildDisabledInstances() (InstancedMesh)
+- [ ] Block 7: buildRoads() + buildTownSign()
+- [ ] Block 8: buildTown() × 3타운
+
+### Phase 3 — 플레이어 + 조작
+- [ ] Block 9: buildPlane() + player 생성
+- [ ] Block 10: PointerLockControls + 입력 (WASD, Space 더블탭, E 토글)
+- [ ] Block 11: 온보딩 + Raycaster + HUD DOM
+
+### Phase 4 — 게임 루프 + 배포
+- [ ] Block 12: tick() (3인칭/1인칭 이동, 카메라, Raycaster hover, HUD)
+- [ ] npx serve . 로컬 테스트
+- [ ] git push 배포
 
 ---
 
 ## 메모
-
-### 구현 결정사항 (2026-03-19)
-
-- Three.js r160 CDN (jsdelivr importmap) 사용
-- 비행기: BoxGeometry 조합 (fuselage + wings + tail + engines)
-- 빌딩 signboard face: z<0 슬롯은 +Z face(idx 4), z>0 슬롯은 -Z face(idx 5)로 항상 도로를 향함
-- 카메라 오프셋: (0,4,8) × Y rotation만 적용 (뱅킹은 카메라에 전달 안 함)
-- 비행 자동착지: y <= GY + 0.05 이하로 내려가면 GROUND 상태 전환
-- Space 더블탭: 300ms 이내 두 번 keydown 감지 (repeat 제외)
-- config.js CONFIG 전역 변수로 접근 (ES module 아님)
-- 로컬 테스트: `npx serve .` 또는 VS Code Live Server 필수 (file:// 불가)
+(구현 중 특이사항 여기에 기록)
