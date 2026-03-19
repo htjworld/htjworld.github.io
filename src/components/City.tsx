@@ -400,15 +400,20 @@ export const City = memo(() => {
         <planeGeometry args={[3000, 3000]} />
         <meshStandardMaterial color="#6b4c2a" />
       </mesh>
-      {/* 타운별 구역 패치 (y=0.01 — z-fighting 방지) */}
+      {/* 타운별 구역 패치 */}
       {[
         { cx: -430, color: '#0a1a2a' }, // AI TOWN
         { cx:    0, color: '#120820' }, // WEB TOWN
         { cx:  430, color: '#0a1a0d' }, // HTJ TOWN
       ].map(({ cx, color }) => (
-        <mesh key={cx} rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0.01, 0]}>
+        <mesh key={cx} rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0, 0]}>
           <planeGeometry args={[340, 340]} />
-          <meshStandardMaterial color={color} />
+          <meshStandardMaterial
+            color={color}
+            polygonOffset
+            polygonOffsetFactor={-1}
+            polygonOffsetUnits={-1}
+          />
         </mesh>
       ))}
 
