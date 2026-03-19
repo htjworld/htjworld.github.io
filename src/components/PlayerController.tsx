@@ -96,13 +96,15 @@ export const PlayerController = () => {
         case 'Space': {
           e.preventDefault();
           up.current = true;
-          const now = performance.now();
-          if (now - lastSpaceTap.current < DOUBLE_TAP_MS) {
-            fastMode.current = !fastMode.current;
-            setFastMode(fastMode.current);
-            lastSpaceTap.current = 0;
-          } else {
-            lastSpaceTap.current = now;
+          if (!e.repeat) {
+            const now = performance.now();
+            if (now - lastSpaceTap.current < DOUBLE_TAP_MS) {
+              fastMode.current = !fastMode.current;
+              setFastMode(fastMode.current);
+              lastSpaceTap.current = 0;
+            } else {
+              lastSpaceTap.current = now;
+            }
           }
           break;
         }
