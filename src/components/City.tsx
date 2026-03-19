@@ -1,9 +1,18 @@
 import { useMemo, memo, Suspense } from 'react';
 import { Text } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei';
 import { Billboard } from './Billboard';
 import { registerBuilding, buildingColliders } from '../store/buildings';
 import { getPostsByTown } from '../config/posts';
 import type { Town } from '../config/posts';
+
+// Kenney building.glb 참조 치수 (조정 가능)
+// — 실제 모델 크기가 다르면 이 값만 바꾸면 됨
+const KENNEY_W = 6;
+const KENNEY_H = 20;
+const KENNEY_D = 6;
+
+useGLTF.preload('/building.glb');
 
 // ─── Seeded PRNG ────────────────────────────────────────────────────────────
 function makePRNG(seed: number) {
@@ -295,29 +304,30 @@ const HTJDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
   );
 };
 
-// ─── Individual building (memoized to prevent re-render jitter) ──────────────
-const BuildingMesh = memo(({ b }: { b: BuildingDatum }) => (
-  <group>
-    <mesh position={[b.x, b.y, b.z]} castShadow receiveShadow>
-      <boxGeometry args={[b.w, b.h, b.d]} />
-      <meshStandardMaterial color={b.color} />
-    </mesh>
+// ─── Individual building (GLB model) ─────────────────────────────────────────
+const BuildingMesh = memo(({ b }: { b: BuildingDatum }) => {
+  const { scene } = useGLTF('/building.glb');
+  const cloned = useMemo(() => scene.clone(true), [scene]);
 
-    {/* Window grid overlay on front face */}
-    <mesh position={[b.x, b.y, b.z + b.d / 2 + 0.02]}>
-      <planeGeometry args={[b.w * 0.85, b.h * 0.9]} />
-      <meshBasicMaterial color="#000a1a" transparent opacity={0.65} />
-    </mesh>
-
-    {b.post && (
-      <Billboard
-        post={b.post}
-        position={[b.x, b.h * 0.45, b.z + b.d / 2 + 0.4]}
-        width={Math.min(b.w * 0.85, 12)}
+  return (
+    <group>
+      {/* GLB 모델 — 건물 치수에 맞게 비균일 스케일 */}
+      <primitive
+        object={cloned}
+        position={[b.x, 0, b.z]}
+        scale={[b.w / KENNEY_W, b.h / KENNEY_H, b.d / KENNEY_D]}
       />
-    )}
-  </group>
-));
+
+      {b.post && (
+        <Billboard
+          post={b.post}
+          position={[b.x, b.h * 0.45, b.z + b.d / 2 + 0.4]}
+          width={Math.min(b.w * 0.85, 12)}
+        />
+      )}
+    </group>
+  );
+});
 BuildingMesh.displayName = 'BuildingMesh';
 
 // ─── Main City component ──────────────────────────────────────────────────────
