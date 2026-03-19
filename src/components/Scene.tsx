@@ -1,34 +1,77 @@
+import { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Sky, Stars } from '@react-three/drei';
+import { Sky } from '@react-three/drei';
+import { useThree } from '@react-three/fiber';
 import { PlayerController } from './PlayerController';
-import { CreativeCity } from './themes/CreativeCity';
+import { City } from './City';
+import { Particles } from './Particles';
+import { useGameStore } from '../store/gameStore';
+
+// Overview camera for the start/pause screen — shows all three towns from above
+const StartCamera = () => {
+  const { camera } = useThree();
+  useEffect(() => {
+    camera.position.set(0, 350, 200);
+    camera.lookAt(0, 0, 0);
+  }, [camera]);
+  return null;
+};
+
+const WorldContent = () => {
+  const { started } = useGameStore();
+
+  return (
+    <>
+      {/* Lighting */}
+      <ambientLight intensity={0.4} />
+      <directionalLight
+        position={[200, 300, 100]}
+        intensity={1.2}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-far={2000}
+        shadow-camera-left={-600}
+        shadow-camera-right={600}
+        shadow-camera-top={600}
+        shadow-camera-bottom={-600}
+      />
+      <hemisphereLight args={['#87ceeb', '#3d2810', 0.3]} />
+
+      {/* Sky — blue with atmospheric haze */}
+      <Sky
+        distance={10000}
+        sunPosition={[100, 30, 100]}
+        inclination={0.49}
+        azimuth={0.25}
+        turbidity={4}
+        rayleigh={0.8}
+        mieCoefficient={0.005}
+        mieDirectionalG={0.8}
+      />
+
+      {/* Particles (always present, world-space snow/stars) */}
+      <Particles />
+
+      {/* City */}
+      <Suspense fallback={null}>
+        <City />
+      </Suspense>
+
+      {/* Camera: overview before start, player controller after */}
+      {!started && <StartCamera />}
+      {started && <PlayerController />}
+    </>
+  );
+};
 
 export const Scene = () => {
   return (
-    <>
-      <Canvas camera={{ position: [0, 5, 10], fov: 75 }} shadows>
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} intensity={1} />
-        <directionalLight position={[100, 100, 50]} intensity={1} castShadow />
-
-        <Sky sunPosition={[100, 20, 100]} />
-        <Stars />
-
-        <CreativeCity />
-        <PlayerController />
-      </Canvas>
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        width: '10px',
-        height: '10px',
-        backgroundColor: 'white',
-        borderRadius: '50%',
-        transform: 'translate(-50%, -50%)',
-        pointerEvents: 'none',
-        mixBlendMode: 'difference',
-      }} />
-    </>
+    <Canvas
+      camera={{ position: [0, 350, 200], fov: 75, near: 0.5, far: 3000 }}
+      shadows
+      gl={{ antialias: true }}
+    >
+      <WorldContent />
+    </Canvas>
   );
 };

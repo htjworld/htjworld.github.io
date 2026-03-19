@@ -1,81 +1,157 @@
 import { useRef, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import { PointerLockControls } from '@react-three/drei';
-import { Vector3 } from 'three';
+import { Vector3, Raycaster, Vector2 } from 'three';
+import { buildingColliders } from '../store/buildings';
+import { useGameStore } from '../store/gameStore';
 
-const FLYING_SPEED = 60;
-const GROUND_Y = 2;
+const MIN_HEIGHT = 5;
+const SPEED = 45;
+const VERTICAL_SPEED = 22;
+const BOOST_MULT = 3;
+const DOUBLE_TAP_MS = 300;
+
+function isColliding(pos: Vector3): boolean {
+  for (const box of buildingColliders) {
+    if (box.containsPoint(pos)) return true;
+  }
+  return false;
+}
 
 export const PlayerController = () => {
-  const { camera } = useThree();
+  const { camera, scene } = useThree();
+  const setFastMode = useGameStore((s) => s.setFastMode);
 
-  const keys = useRef({
-    forward: false, backward: false,
-    left: false, right: false,
-    up: false, down: false,
-    boost: false,
-  });
+  const fwd = useRef(false);
+  const bwd = useRef(false);
+  const lft = useRef(false);
+  const rgt = useRef(false);
+  const up = useRef(false);
+  const dn = useRef(false);
+  const fastMode = useRef(false);
+  const lastSpaceTap = useRef(0);
+
+  // Reset camera to fly position when this component mounts (game starts)
+  useEffect(() => {
+    // Home position: ground level center, all three towns visible in the distance
+    camera.position.set(0, 5, 700);
+    camera.rotation.order = 'YXZ';
+    camera.rotation.set(0, 0, 0);
+  }, [camera]);
 
   useEffect(() => {
-    const resetKeys = () => {
-      const k = keys.current;
-      k.forward = k.backward = k.left = k.right = k.up = k.down = k.boost = false;
+    const onKeyDown = (e: KeyboardEvent) => {
+      switch (e.code) {
+        case 'KeyW': case 'ArrowUp':    fwd.current = true; break;
+        case 'KeyS': case 'ArrowDown':  bwd.current = true; break;
+        case 'KeyA': case 'ArrowLeft':  lft.current = true; break;
+        case 'KeyD': case 'ArrowRight': rgt.current = true; break;
+        case 'ShiftLeft': case 'ShiftRight':
+          dn.current = true;
+          break;
+        case 'Space': {
+          e.preventDefault();
+          up.current = true;
+          const now = performance.now();
+          if (now - lastSpaceTap.current < DOUBLE_TAP_MS) {
+            fastMode.current = !fastMode.current;
+            setFastMode(fastMode.current);
+            lastSpaceTap.current = 0; // reset so triple-tap doesn't re-toggle
+          } else {
+            lastSpaceTap.current = now;
+          }
+          break;
+        }
+      }
     };
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      const k = keys.current;
-      if (e.code === 'KeyW' || e.code === 'ArrowUp') k.forward = true;
-      if (e.code === 'KeyS' || e.code === 'ArrowDown') k.backward = true;
-      if (e.code === 'KeyA' || e.code === 'ArrowLeft') k.left = true;
-      if (e.code === 'KeyD' || e.code === 'ArrowRight') k.right = true;
-      if (e.code === 'Space') k.up = true;
-      if (e.code === 'ControlLeft' || e.code === 'KeyC') k.down = true;
-      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') k.boost = true;
-    };
     const onKeyUp = (e: KeyboardEvent) => {
-      const k = keys.current;
-      if (e.code === 'KeyW' || e.code === 'ArrowUp') k.forward = false;
-      if (e.code === 'KeyS' || e.code === 'ArrowDown') k.backward = false;
-      if (e.code === 'KeyA' || e.code === 'ArrowLeft') k.left = false;
-      if (e.code === 'KeyD' || e.code === 'ArrowRight') k.right = false;
-      if (e.code === 'Space') k.up = false;
-      if (e.code === 'ControlLeft' || e.code === 'KeyC') k.down = false;
-      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') k.boost = false;
+      switch (e.code) {
+        case 'KeyW': case 'ArrowUp':    fwd.current = false; break;
+        case 'KeyS': case 'ArrowDown':  bwd.current = false; break;
+        case 'KeyA': case 'ArrowLeft':  lft.current = false; break;
+        case 'KeyD': case 'ArrowRight': rgt.current = false; break;
+        case 'ShiftLeft': case 'ShiftRight': dn.current = false; break;
+        case 'Space': up.current = false; break;
+      }
     };
 
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
-    document.addEventListener('pointerlockchange', resetKeys);
-    window.addEventListener('blur', resetKeys);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keyup', onKeyUp);
-      document.removeEventListener('pointerlockchange', resetKeys);
-      window.removeEventListener('blur', resetKeys);
     };
-  }, []);
+  }, [setFastMode]);
+
+  // Click: raycast to find billboard under crosshair
+  useEffect(() => {
+    const onClick = () => {
+      if (!document.pointerLockElement) return;
+      const raycaster = new Raycaster();
+      raycaster.setFromCamera(new Vector2(0, 0), camera);
+      raycaster.far = 200;
+      const hits = raycaster.intersectObjects(scene.children, true);
+      for (const h of hits) {
+        if (h.object.userData.link) {
+          window.open(h.object.userData.link as string, '_blank');
+          break;
+        }
+      }
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, [camera, scene]);
 
   useFrame((_, delta) => {
-    const { forward, backward, left, right, up, down, boost } = keys.current;
-    const speed = boost ? FLYING_SPEED * 2 : FLYING_SPEED;
+    const dt = Math.min(delta, 0.05);
+    const mult = fastMode.current ? BOOST_MULT : 1;
+    const spd = SPEED * mult;
+    const vspd = VERTICAL_SPEED * mult;
 
-    const lookDir = new Vector3();
-    camera.getWorldDirection(lookDir);
+    // --- Horizontal movement: camera-relative (use actual world direction) ---
+    const anyH = fwd.current || bwd.current || lft.current || rgt.current;
+    if (anyH) {
+      const cameraFwd = new Vector3();
+      camera.getWorldDirection(cameraFwd);
+      cameraFwd.y = 0;
+      if (cameraFwd.lengthSq() > 0.001) cameraFwd.normalize();
+      const cameraRight = new Vector3(-cameraFwd.z, 0, cameraFwd.x);
 
-    const rightDir = new Vector3();
-    rightDir.crossVectors(lookDir, new Vector3(0, 1, 0)).normalize();
+      const h = new Vector3();
+      if (fwd.current) h.addScaledVector(cameraFwd,   spd * dt);
+      if (bwd.current) h.addScaledVector(cameraFwd,  -spd * dt);
+      if (lft.current) h.addScaledVector(cameraRight, -spd * dt);
+      if (rgt.current) h.addScaledVector(cameraRight,  spd * dt);
 
-    const move = new Vector3();
-    if (forward) move.addScaledVector(lookDir, speed * delta);
-    if (backward) move.addScaledVector(lookDir, -speed * delta);
-    if (left) move.addScaledVector(rightDir, -speed * delta);
-    if (right) move.addScaledVector(rightDir, speed * delta);
-    if (up) move.y += speed * 0.5 * delta;
-    if (down) move.y -= speed * 0.5 * delta;
+      const next = camera.position.clone();
+      next.x += h.x;
+      next.z += h.z;
 
-    camera.position.add(move);
+      if (!isColliding(next)) {
+        camera.position.x = next.x;
+        camera.position.z = next.z;
+      } else {
+        // Axis-separated sliding
+        const nx = camera.position.clone();
+        nx.x += h.x;
+        if (!isColliding(nx)) camera.position.x = nx.x;
 
-    if (camera.position.y < GROUND_Y) camera.position.y = GROUND_Y;
+        const nz = camera.position.clone();
+        nz.z += h.z;
+        if (!isColliding(nz)) camera.position.z = nz.z;
+      }
+    }
+
+    // --- Vertical movement ---
+    if (up.current || dn.current) {
+      const vd = (up.current ? 1 : -1) * vspd * dt;
+      const newY = Math.max(MIN_HEIGHT, camera.position.y + vd);
+      const testPos = new Vector3(camera.position.x, newY, camera.position.z);
+      if (!isColliding(testPos)) {
+        camera.position.y = newY;
+      }
+    }
   });
 
   return <PointerLockControls />;
