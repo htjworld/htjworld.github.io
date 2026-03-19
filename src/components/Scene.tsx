@@ -1,8 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { Sky, Stars } from '@react-three/drei';
-import { Physics } from '@react-three/cannon';
 import { PlayerController } from './PlayerController';
-import { ThemeManager } from './themes/ThemeManager';
+import { CreativeCity } from './themes/CreativeCity';
 
 export const Scene = () => {
   return (
@@ -15,10 +14,8 @@ export const Scene = () => {
         <Sky sunPosition={[100, 20, 100]} />
         <Stars />
 
-        <Physics gravity={[0, -9.8, 0]}>
-          <ThemeManager />
-          <PlayerController />
-        </Physics>
+        <CreativeCity />
+        <PlayerController />
       </Canvas>
       <div style={{
         position: 'absolute',

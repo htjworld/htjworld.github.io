@@ -2,26 +2,12 @@ import { useRef, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import { PointerLockControls } from '@react-three/drei';
 import { Vector3 } from 'three';
-import { useSphere } from '@react-three/cannon';
 
 const FLYING_SPEED = 60;
 const GROUND_Y = 2;
 
 export const PlayerController = () => {
   const { camera } = useThree();
-
-  const [, api] = useSphere(() => ({
-    mass: 1,
-    position: [0, 5, 0],
-    args: [1],
-    fixedRotation: true,
-    linearDamping: 0.95,
-  }));
-
-  const velocity = useRef([0, 0, 0]);
-  const pos = useRef([0, 5, 0]);
-  useEffect(() => api.velocity.subscribe((v) => (velocity.current = v)), [api.velocity]);
-  useEffect(() => api.position.subscribe((p) => (pos.current = p)), [api.position]);
 
   const keys = useRef({
     forward: false, backward: false,
@@ -31,6 +17,11 @@ export const PlayerController = () => {
   });
 
   useEffect(() => {
+    const resetKeys = () => {
+      const k = keys.current;
+      k.forward = k.backward = k.left = k.right = k.up = k.down = k.boost = false;
+    };
+
     const onKeyDown = (e: KeyboardEvent) => {
       const k = keys.current;
       if (e.code === 'KeyW' || e.code === 'ArrowUp') k.forward = true;
@@ -51,15 +42,20 @@ export const PlayerController = () => {
       if (e.code === 'ControlLeft' || e.code === 'KeyC') k.down = false;
       if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') k.boost = false;
     };
+
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
+    document.addEventListener('pointerlockchange', resetKeys);
+    window.addEventListener('blur', resetKeys);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keyup', onKeyUp);
+      document.removeEventListener('pointerlockchange', resetKeys);
+      window.removeEventListener('blur', resetKeys);
     };
   }, []);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const { forward, backward, left, right, up, down, boost } = keys.current;
     const speed = boost ? FLYING_SPEED * 2 : FLYING_SPEED;
 
@@ -69,20 +65,17 @@ export const PlayerController = () => {
     const rightDir = new Vector3();
     rightDir.crossVectors(lookDir, new Vector3(0, 1, 0)).normalize();
 
-    const vel = new Vector3();
-    if (forward) vel.addScaledVector(lookDir, speed);
-    if (backward) vel.addScaledVector(lookDir, -speed);
-    if (left) vel.addScaledVector(rightDir, -speed);
-    if (right) vel.addScaledVector(rightDir, speed);
-    if (up) vel.y += speed * 0.5;
-    if (down) vel.y -= speed * 0.5;
+    const move = new Vector3();
+    if (forward) move.addScaledVector(lookDir, speed * delta);
+    if (backward) move.addScaledVector(lookDir, -speed * delta);
+    if (left) move.addScaledVector(rightDir, -speed * delta);
+    if (right) move.addScaledVector(rightDir, speed * delta);
+    if (up) move.y += speed * 0.5 * delta;
+    if (down) move.y -= speed * 0.5 * delta;
 
-    api.velocity.set(vel.x, vel.y, vel.z);
-    camera.position.set(pos.current[0], pos.current[1] + 1, pos.current[2]);
+    camera.position.add(move);
 
-    if (pos.current[1] < GROUND_Y - 1) {
-      api.position.set(pos.current[0], GROUND_Y - 1, pos.current[2]);
-    }
+    if (camera.position.y < GROUND_Y) camera.position.y = GROUND_Y;
   });
 
   return <PointerLockControls />;

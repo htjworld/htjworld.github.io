@@ -17,15 +17,15 @@ export const AdBoard = ({ ad, position, rotation = [0, 0, 0], width = 5 }: AdBoa
 
   return (
     <group position={position} rotation={rotation}>
-      {/* Frame/Backboard */}
-      <mesh position={[0, 0, -0.1]}>
+      {/* Frame/Backboard — position 0.05 forward so back face clears building surface */}
+      <mesh position={[0, 0, 0.05]}>
         <boxGeometry args={[width + 0.5, height + 0.5, 0.2]} />
         <meshStandardMaterial color="#333" />
       </mesh>
 
       {/* Ad Surface */}
-      <mesh 
-        position={[0, 0, 0.05]} // Increased slightly to prevent z-fighting
+      <mesh
+        position={[0, 0, 0.2]}
         onPointerOver={() => setHover(true)}
         onPointerOut={() => setHover(false)}
         onClick={() => window.open(ad.linkUrl, '_blank')}
