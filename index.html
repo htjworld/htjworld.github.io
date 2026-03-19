@@ -355,19 +355,21 @@ function buildPlane() {
 
   g.add(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 3), wm));
 
+  // 날개는 동체 뒤쪽(-Z)에서 약간 앞쪽으로 (nose = -Z 방향)
   const wing = new THREE.Mesh(new THREE.BoxGeometry(4, 0.1, 1), wm);
-  wing.position.set(0, 0, 0.2); g.add(wing);
+  wing.position.set(0, 0, -0.2); g.add(wing);
 
+  // 꼬리날개 / 꼬리지느러미는 +Z (후미)
   const tw = new THREE.Mesh(new THREE.BoxGeometry(2, 0.08, 0.5), dm);
-  tw.position.set(0, 0.1, -1.2); g.add(tw);
+  tw.position.set(0, 0.1, 1.2); g.add(tw);
 
   const tf = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 0.7), dm);
-  tf.position.set(0, 0.5, -1.2); g.add(tf);
+  tf.position.set(0, 0.5, 1.2); g.add(tf);
 
   [-1.2, 1.2].forEach(ex => {
     const e = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.8, 8), dm);
     e.rotation.z = Math.PI / 2;
-    e.position.set(ex, -0.15, 0.3);
+    e.position.set(ex, -0.15, -0.3);
     g.add(e);
   });
 
@@ -439,7 +441,7 @@ const GY = 1, MAXALT = 50;
 
 function tick() {
   requestAnimationFrame(tick);
-  const dt = clock.getDelta();
+  const dt = Math.min(clock.getDelta(), 0.1); // 100ms 초과 delta 클램핑
   const n = dt * 60;
 
   if (started) {
@@ -448,7 +450,9 @@ function tick() {
     if (keys['KeyD']) player.rotation.y -= ROT * n;
 
     // Forward / back
+    // getWorldDirection은 로컬 +Z(=꼬리 방향)를 반환하므로 negate해서 nose 방향으로
     player.getWorldDirection(FWD);
+    FWD.negate();
     if (!flying) { FWD.y = 0; FWD.normalize(); }
     const spd = (flying ? FSPD : GSPD) * n;
     if (keys['KeyW']) player.position.addScaledVector(FWD,  spd);
