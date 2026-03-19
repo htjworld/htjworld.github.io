@@ -1,16 +1,28 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, Suspense } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
-import { PointerLockControls } from '@react-three/drei';
-import { Vector3, Raycaster, Vector2 } from 'three';
+import { useGLTF } from '@react-three/drei';
+import { Vector3, Raycaster, Vector2, Group } from 'three';
 import { buildingColliders } from '../store/buildings';
 import { useGameStore } from '../store/gameStore';
 
+// ─── Constants ────────────────────────────────────────────────────────────────
 const MIN_HEIGHT = 5;
 const SPEED = 45;
 const VERTICAL_SPEED = 22;
 const BOOST_MULT = 3;
 const DOUBLE_TAP_MS = 300;
+const MOUSE_SENS = 0.002;
 
+// 3rd-person camera offsets
+const CAM_BACK = 18;       // units behind the plane
+const CAM_UP = 6;          // units above the plane
+const CAM_LERP = 0.1;      // follow smoothness (0=no follow, 1=instant)
+const CAM_LOOK_AHEAD = 8;  // look target offset ahead of plane
+
+// If the plane faces the wrong way, toggle this between 0 and Math.PI
+const MODEL_YAW_OFFSET = 0;
+
+// ─── Collision helper ─────────────────────────────────────────────────────────
 function isColliding(pos: Vector3): boolean {
   for (const box of buildingColliders) {
     if (box.containsPoint(pos)) return true;
@@ -18,10 +30,30 @@ function isColliding(pos: Vector3): boolean {
   return false;
 }
 
+// ─── GLB plane model (cached by useGLTF) ─────────────────────────────────────
+const PlaneModel = () => {
+  const { scene } = useGLTF('/plane.glb');
+  return <primitive object={scene} scale={[0.5, 0.5, 0.5]} />;
+};
+useGLTF.preload('/plane.glb');
+
+// ─── PlayerController ─────────────────────────────────────────────────────────
 export const PlayerController = () => {
   const { camera, scene } = useThree();
   const setFastMode = useGameStore((s) => s.setFastMode);
 
+  // Plane world position (ref = no re-render)
+  const planePos = useRef(new Vector3(0, 5, 700));
+  // Smooth camera world position
+  const camPos = useRef(new Vector3(0, 5 + CAM_UP, 700 + CAM_BACK));
+  // Plane mesh group
+  const planeRef = useRef<Group>(null);
+
+  // Mouse-tracked heading
+  const yaw = useRef(0);    // horizontal (radians), 0 = faces -Z
+  const pitch = useRef(0);  // vertical (radians)
+
+  // Input state
   const fwd = useRef(false);
   const bwd = useRef(false);
   const lft = useRef(false);
@@ -31,14 +63,26 @@ export const PlayerController = () => {
   const fastMode = useRef(false);
   const lastSpaceTap = useRef(0);
 
-  // Reset camera to fly position when this component mounts (game starts)
+  // ── Initial camera placement ─────────────────────────────────────────────
   useEffect(() => {
-    // Home position: ground level center, all three towns visible in the distance
-    camera.position.set(0, 5, 700);
-    camera.rotation.order = 'YXZ';
-    camera.rotation.set(0, 0, 0);
+    camera.position.copy(camPos.current);
+    camera.lookAt(planePos.current);
   }, [camera]);
 
+  // ── Mouse: accumulate yaw/pitch while pointer is locked ─────────────────
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!document.pointerLockElement) return;
+      yaw.current -= e.movementX * MOUSE_SENS;
+      pitch.current -= e.movementY * MOUSE_SENS;
+      // Clamp pitch so the plane doesn't flip over
+      pitch.current = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch.current));
+    };
+    document.addEventListener('mousemove', onMouseMove);
+    return () => document.removeEventListener('mousemove', onMouseMove);
+  }, []);
+
+  // ── Keyboard ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       switch (e.code) {
@@ -46,9 +90,7 @@ export const PlayerController = () => {
         case 'KeyS': case 'ArrowDown':  bwd.current = true; break;
         case 'KeyA': case 'ArrowLeft':  lft.current = true; break;
         case 'KeyD': case 'ArrowRight': rgt.current = true; break;
-        case 'ShiftLeft': case 'ShiftRight':
-          dn.current = true;
-          break;
+        case 'ShiftLeft': case 'ShiftRight': dn.current = true; break;
         case 'Space': {
           e.preventDefault();
           up.current = true;
@@ -56,7 +98,7 @@ export const PlayerController = () => {
           if (now - lastSpaceTap.current < DOUBLE_TAP_MS) {
             fastMode.current = !fastMode.current;
             setFastMode(fastMode.current);
-            lastSpaceTap.current = 0; // reset so triple-tap doesn't re-toggle
+            lastSpaceTap.current = 0;
           } else {
             lastSpaceTap.current = now;
           }
@@ -64,7 +106,6 @@ export const PlayerController = () => {
         }
       }
     };
-
     const onKeyUp = (e: KeyboardEvent) => {
       switch (e.code) {
         case 'KeyW': case 'ArrowUp':    fwd.current = false; break;
@@ -75,7 +116,6 @@ export const PlayerController = () => {
         case 'Space': up.current = false; break;
       }
     };
-
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
     return () => {
@@ -84,7 +124,7 @@ export const PlayerController = () => {
     };
   }, [setFastMode]);
 
-  // Click: raycast to find billboard under crosshair
+  // ── Click: raycast for billboard links ───────────────────────────────────
   useEffect(() => {
     const onClick = () => {
       if (!document.pointerLockElement) return;
@@ -103,56 +143,86 @@ export const PlayerController = () => {
     return () => document.removeEventListener('click', onClick);
   }, [camera, scene]);
 
+  // ── Frame loop ────────────────────────────────────────────────────────────
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     const mult = fastMode.current ? BOOST_MULT : 1;
-    const spd = SPEED * mult;
+    const spd  = SPEED * mult;
     const vspd = VERTICAL_SPEED * mult;
 
-    // --- Horizontal movement: camera-relative (use actual world direction) ---
-    const anyH = fwd.current || bwd.current || lft.current || rgt.current;
-    if (anyH) {
-      const cameraFwd = new Vector3();
-      camera.getWorldDirection(cameraFwd);
-      cameraFwd.y = 0;
-      if (cameraFwd.lengthSq() > 0.001) cameraFwd.normalize();
-      const cameraRight = new Vector3(-cameraFwd.z, 0, cameraFwd.x);
+    // Direction vectors from yaw (XZ plane only — WASD is always horizontal)
+    const sinY = Math.sin(yaw.current);
+    const cosY = Math.cos(yaw.current);
+    const forward = new Vector3(-sinY, 0, -cosY); // faces -Z when yaw=0
+    const right   = new Vector3( cosY, 0, -sinY);
 
+    // ── Horizontal movement ──────────────────────────────────────────────
+    if (fwd.current || bwd.current || lft.current || rgt.current) {
       const h = new Vector3();
-      if (fwd.current) h.addScaledVector(cameraFwd,   spd * dt);
-      if (bwd.current) h.addScaledVector(cameraFwd,  -spd * dt);
-      if (lft.current) h.addScaledVector(cameraRight, -spd * dt);
-      if (rgt.current) h.addScaledVector(cameraRight,  spd * dt);
+      if (fwd.current) h.addScaledVector(forward,  spd * dt);
+      if (bwd.current) h.addScaledVector(forward, -spd * dt);
+      if (lft.current) h.addScaledVector(right,   -spd * dt);
+      if (rgt.current) h.addScaledVector(right,    spd * dt);
 
-      const next = camera.position.clone();
+      const next = planePos.current.clone();
       next.x += h.x;
       next.z += h.z;
 
       if (!isColliding(next)) {
-        camera.position.x = next.x;
-        camera.position.z = next.z;
+        planePos.current.x = next.x;
+        planePos.current.z = next.z;
       } else {
         // Axis-separated sliding
-        const nx = camera.position.clone();
-        nx.x += h.x;
-        if (!isColliding(nx)) camera.position.x = nx.x;
-
-        const nz = camera.position.clone();
-        nz.z += h.z;
-        if (!isColliding(nz)) camera.position.z = nz.z;
+        const nx = planePos.current.clone(); nx.x += h.x;
+        if (!isColliding(nx)) planePos.current.x = nx.x;
+        const nz = planePos.current.clone(); nz.z += h.z;
+        if (!isColliding(nz)) planePos.current.z = nz.z;
       }
     }
 
-    // --- Vertical movement ---
+    // ── Vertical movement ─────────────────────────────────────────────────
     if (up.current || dn.current) {
       const vd = (up.current ? 1 : -1) * vspd * dt;
-      const newY = Math.max(MIN_HEIGHT, camera.position.y + vd);
-      const testPos = new Vector3(camera.position.x, newY, camera.position.z);
-      if (!isColliding(testPos)) {
-        camera.position.y = newY;
-      }
+      const newY = Math.max(MIN_HEIGHT, planePos.current.y + vd);
+      const test = new Vector3(planePos.current.x, newY, planePos.current.z);
+      if (!isColliding(test)) planePos.current.y = newY;
     }
+
+    // ── Plane mesh: position + rotation ──────────────────────────────────
+    if (planeRef.current) {
+      planeRef.current.position.copy(planePos.current);
+
+      // Banking effect when turning left/right
+      const bank = ((lft.current ? 1 : 0) - (rgt.current ? 1 : 0)) * 0.35;
+
+      // YXZ order: yaw first, then pitch (nose tilt), then bank roll
+      planeRef.current.rotation.order = 'YXZ';
+      planeRef.current.rotation.y = yaw.current + MODEL_YAW_OFFSET;
+      planeRef.current.rotation.x = -pitch.current * 0.6;
+      planeRef.current.rotation.z = bank;
+    }
+
+    // ── 3rd-person camera ─────────────────────────────────────────────────
+    // Target: behind and above the plane along the back direction
+    const back = new Vector3(sinY, 0, cosY); // opposite of forward
+    const targetCam = planePos.current.clone()
+      .addScaledVector(back, CAM_BACK)
+      .add(new Vector3(0, CAM_UP, 0));
+
+    // Smooth lerp to target
+    camPos.current.lerp(targetCam, CAM_LERP);
+    camera.position.copy(camPos.current);
+
+    // Look a bit ahead of the plane (natural 3rd-person feel)
+    const lookTarget = planePos.current.clone().addScaledVector(forward, CAM_LOOK_AHEAD);
+    camera.lookAt(lookTarget);
   });
 
-  return <PointerLockControls />;
+  return (
+    <group ref={planeRef}>
+      <Suspense fallback={null}>
+        <PlaneModel />
+      </Suspense>
+    </group>
+  );
 };
