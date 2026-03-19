@@ -54,7 +54,7 @@ src/
 | 키 | 동작 |
 |---|---|
 | 화면 클릭 | 마우스 캡처 (Pointer Lock) |
-| WASD | 이동 (시점 기준 — `camera.getWorldDirection` 사용) |
+| WASD | 이동 (시점 기준 — yaw + **pitch 포함** 3D 방향벡터) |
 | Space | 상승 |
 | Ctrl | 하강 |
 | Shift | 가속 modifier (WASD·Space·Ctrl 전부에 적용) |
@@ -102,6 +102,16 @@ git push main → GitHub Actions → npm run build → peaceiris/gh-pages → gh
 ```
 - GitHub Pages 설정: Source = `gh-pages` 브랜치 루트
 - `vite.config.ts`: `base: '/'`
+
+---
+
+## 비행기 모델 설정
+
+- `MODEL_YAW_OFFSET = Math.PI` — GLB 모델이 기본적으로 뒤를 보므로 180° 보정
+- `CAM_BACK = 12` — 카메라에서 비행기까지 거리 (줄일수록 비행기가 가까이 보임)
+- `CAM_UP = 5` — 카메라 위 오프셋
+- 이동 방향: pitch + yaw 모두 반영한 3D forward 벡터 사용 (위를 보고 W누르면 실제로 위로 이동)
+- 카메라 back 벡터도 pitch 반영 → 급상승 시 카메라가 비행기 아래-뒤에서 따라옴
 
 ---
 

@@ -15,13 +15,12 @@ const DOUBLE_TAP_MS = 300;
 const MOUSE_SENS = 0.002;
 const ACCEL_LERP = 0.12; // lerp factor per frame → smooth acceleration/decel
 
-const CAM_BACK       = 18;
-const CAM_UP         =  6;
+const CAM_BACK       = 12;
+const CAM_UP         =  5;
 const CAM_LERP       = 0.1;
 const CAM_LOOK_AHEAD =  8;
 
-// Flip to Math.PI if the plane appears to face backwards
-const MODEL_YAW_OFFSET = 0;
+const MODEL_YAW_OFFSET = Math.PI;
 
 // ─── Collision helper ─────────────────────────────────────────────────────────
 function isColliding(pos: Vector3): boolean {
@@ -157,11 +156,13 @@ export const PlayerController = () => {
     const t = rbRef.current.translation();
     planePos.current.set(t.x, t.y, t.z);
 
-    // Direction from yaw (XZ plane)
+    // Direction from yaw + pitch (full 3D)
     const sinY    = Math.sin(yaw.current);
     const cosY    = Math.cos(yaw.current);
-    const forward = new Vector3(-sinY, 0, -cosY);
-    const right   = new Vector3( cosY, 0, -sinY);
+    const sinP    = Math.sin(pitch.current);
+    const cosP    = Math.cos(pitch.current);
+    const forward = new Vector3(-sinY * cosP, sinP, -cosY * cosP);
+    const right   = new Vector3( cosY,        0,    -sinY);
 
     // Build target velocity from input
     const targetVel = new Vector3();
@@ -217,12 +218,12 @@ export const PlayerController = () => {
       const bank = ((lft.current ? 1 : 0) - (rgt.current ? 1 : 0)) * 0.35;
       planeGroupRef.current.rotation.order = 'YXZ';
       planeGroupRef.current.rotation.y = yaw.current + MODEL_YAW_OFFSET;
-      planeGroupRef.current.rotation.x = -pitch.current * 0.6;
+      planeGroupRef.current.rotation.x = pitch.current;
       planeGroupRef.current.rotation.z = bank;
     }
 
-    // ── 3rd-person camera ─────────────────────────────────────────────────
-    const back = new Vector3(sinY, 0, cosY);
+    // ── 3rd-person camera (pitch 반영) ────────────────────────────────────
+    const back = new Vector3(sinY * cosP, -sinP, cosY * cosP);
     const targetCam = planePos.current.clone()
       .addScaledVector(back, CAM_BACK)
       .add(new Vector3(0, CAM_UP, 0));
