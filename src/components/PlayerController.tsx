@@ -1,113 +1,88 @@
 import { useRef, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import { PointerLockControls } from '@react-three/drei';
-import { Vector3 } from 'three';
+import { Vector3, Euler } from 'three';
+import { useSphere } from '@react-three/cannon';
 
-const SPEED = 40.0; // Doubled from 20.0
-const BOOST_MULTIPLIER = 3.0; // Increased from 2.5
+const FLYING_SPEED = 60;
+const GROUND_Y = 2;
 
 export const PlayerController = () => {
   const { camera } = useThree();
-  const moveForward = useRef(false);
-  const moveBackward = useRef(false);
-  const moveLeft = useRef(false);
-  const moveRight = useRef(false);
-  const moveUp = useRef(false);
-  const moveDown = useRef(false);
-  const isBoosting = useRef(false);
+
+  const [, api] = useSphere(() => ({
+    mass: 1,
+    position: [0, 5, 0],
+    args: [1],
+    fixedRotation: true,
+    linearDamping: 0.95,
+  }));
+
+  const velocity = useRef([0, 0, 0]);
+  const pos = useRef([0, 5, 0]);
+  useEffect(() => api.velocity.subscribe((v) => (velocity.current = v)), [api.velocity]);
+  useEffect(() => api.position.subscribe((p) => (pos.current = p)), [api.position]);
+
+  const keys = useRef({
+    forward: false, backward: false,
+    left: false, right: false,
+    up: false, down: false,
+    boost: false,
+  });
 
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      switch (event.code) {
-        case 'ArrowUp':
-        case 'KeyW':
-          moveForward.current = true;
-          break;
-        case 'ArrowLeft':
-        case 'KeyA':
-          moveLeft.current = true;
-          break;
-        case 'ArrowDown':
-        case 'KeyS':
-          moveBackward.current = true;
-          break;
-        case 'ArrowRight':
-        case 'KeyD':
-          moveRight.current = true;
-          break;
-        case 'Space':
-          moveUp.current = true;
-          break;
-        case 'ShiftLeft':
-        case 'ShiftRight':
-           isBoosting.current = true;
-           break;
-        case 'ControlLeft':
-        case 'KeyC':
-            moveDown.current = true;
-            break;
-      }
+    const onKeyDown = (e: KeyboardEvent) => {
+      const k = keys.current;
+      if (e.code === 'KeyW' || e.code === 'ArrowUp') k.forward = true;
+      if (e.code === 'KeyS' || e.code === 'ArrowDown') k.backward = true;
+      if (e.code === 'KeyA' || e.code === 'ArrowLeft') k.left = true;
+      if (e.code === 'KeyD' || e.code === 'ArrowRight') k.right = true;
+      if (e.code === 'Space') k.up = true;
+      if (e.code === 'ControlLeft' || e.code === 'KeyC') k.down = true;
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') k.boost = true;
     };
-
-    const onKeyUp = (event: KeyboardEvent) => {
-      switch (event.code) {
-        case 'ArrowUp':
-        case 'KeyW':
-          moveForward.current = false;
-          break;
-        case 'ArrowLeft':
-        case 'KeyA':
-          moveLeft.current = false;
-          break;
-        case 'ArrowDown':
-        case 'KeyS':
-          moveBackward.current = false;
-          break;
-        case 'ArrowRight':
-        case 'KeyD':
-          moveRight.current = false;
-          break;
-        case 'Space':
-          moveUp.current = false;
-          break;
-        case 'ShiftLeft':
-        case 'ShiftRight':
-           isBoosting.current = false;
-           break;
-        case 'ControlLeft':
-        case 'KeyC':
-            moveDown.current = false;
-            break;
-      }
+    const onKeyUp = (e: KeyboardEvent) => {
+      const k = keys.current;
+      if (e.code === 'KeyW' || e.code === 'ArrowUp') k.forward = false;
+      if (e.code === 'KeyS' || e.code === 'ArrowDown') k.backward = false;
+      if (e.code === 'KeyA' || e.code === 'ArrowLeft') k.left = false;
+      if (e.code === 'KeyD' || e.code === 'ArrowRight') k.right = false;
+      if (e.code === 'Space') k.up = false;
+      if (e.code === 'ControlLeft' || e.code === 'KeyC') k.down = false;
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') k.boost = false;
     };
-
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
-
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keyup', onKeyUp);
     };
   }, []);
 
-  useFrame((_, delta) => {
-    const actualSpeed = isBoosting.current ? SPEED * BOOST_MULTIPLIER : SPEED;
-    const velocity = new Vector3();
+  useFrame(() => {
+    const { forward, backward, left, right, up, down, boost } = keys.current;
+    const speed = boost ? FLYING_SPEED * 2 : FLYING_SPEED;
 
-    if (moveForward.current) velocity.z -= 1;
-    if (moveBackward.current) velocity.z += 1;
-    if (moveLeft.current) velocity.x -= 1;
-    if (moveRight.current) velocity.x += 1;
-    if (moveUp.current) velocity.y += 1;
-    if (moveDown.current) velocity.y -= 1;
-    
-    velocity.normalize().multiplyScalar(actualSpeed * delta);
+    const hDir = new Vector3();
+    if (forward) hDir.z -= 1;
+    if (backward) hDir.z += 1;
+    if (left) hDir.x -= 1;
+    if (right) hDir.x += 1;
+    if (hDir.length() > 0) {
+      hDir.normalize().multiplyScalar(speed);
+      hDir.applyEuler(new Euler(0, camera.rotation.y, 0));
+    }
 
-    // Apply rotation to velocity (except vertical for a simple flying feel, or full 6DOF?)
-    // For simple flying where W is always "forward direction of camera":
-    velocity.applyEuler(camera.rotation);
+    let vy = 0;
+    if (up) vy = speed * 0.5;
+    if (down) vy = -speed * 0.5;
 
-    camera.position.add(velocity);
+    api.velocity.set(hDir.x, vy, hDir.z);
+    camera.position.set(pos.current[0], pos.current[1] + 1, pos.current[2]);
+
+    if (pos.current[1] < GROUND_Y - 1) {
+      api.position.set(pos.current[0], GROUND_Y - 1, pos.current[2]);
+    }
   });
 
   return <PointerLockControls />;

@@ -21,9 +21,6 @@ Thumbs.db
 *.swp
 *.swo
 
-# Claude Code
-.claude/
-
 # 로그
 *.log
 npm-debug.log*
