@@ -2,6 +2,7 @@ import { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Sky } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
+import { Physics } from '@react-three/rapier';
 import { PlayerController } from './PlayerController';
 import { City } from './City';
 import { Particles } from './Particles';
@@ -59,7 +60,11 @@ const WorldContent = () => {
 
       {/* Camera: overview before start, player controller after */}
       {!started && <StartCamera />}
-      {started && <PlayerController />}
+      {started && (
+        <Physics gravity={[0, 0, 0]}>
+          <PlayerController />
+        </Physics>
+      )}
     </>
   );
 };
