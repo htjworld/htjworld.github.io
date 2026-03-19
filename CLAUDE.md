@@ -3,7 +3,7 @@
 
 ## 필수 읽기 순서
 1. 이 파일 (CLAUDE.md)
-2. airplane-blog-plan.md (전체 스펙)
+2. airplane-blog-plan2.md (전체 스펙)
 3. progress.md (현재 진행 상태)
 
 ---
