@@ -1,16 +1,11 @@
 import { useMemo, memo, Suspense } from 'react';
 import { Text } from '@react-three/drei';
 import { useGLTF } from '@react-three/drei';
+import { Box3, Vector3 } from 'three';
 import { Billboard } from './Billboard';
 import { registerBuilding, buildingColliders } from '../store/buildings';
 import { getPostsByTown } from '../config/posts';
 import type { Town } from '../config/posts';
-
-// Kenney building.glb 참조 치수 (조정 가능)
-// — 실제 모델 크기가 다르면 이 값만 바꾸면 됨
-const KENNEY_W = 6;
-const KENNEY_H = 20;
-const KENNEY_D = 6;
 
 useGLTF.preload('/building.glb');
 
@@ -307,15 +302,21 @@ const HTJDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
 // ─── Individual building (GLB model) ─────────────────────────────────────────
 const BuildingMesh = memo(({ b }: { b: BuildingDatum }) => {
   const { scene } = useGLTF('/building.glb');
-  const cloned = useMemo(() => scene.clone(true), [scene]);
+  const [cloned, modelSize] = useMemo(() => {
+    const clone = scene.clone(true);
+    const box = new Box3().setFromObject(clone);
+    const size = new Vector3();
+    box.getSize(size);
+    return [clone, size] as const;
+  }, [scene]);
 
   return (
     <group>
-      {/* GLB 모델 — 건물 치수에 맞게 비균일 스케일 */}
+      {/* GLB 모델 — 실제 bounding box 기준으로 건물 치수에 정확히 맞춤 */}
       <primitive
         object={cloned}
         position={[b.x, 0, b.z]}
-        scale={[b.w / KENNEY_W, b.h / KENNEY_H, b.d / KENNEY_D]}
+        scale={[b.w / modelSize.x, b.h / modelSize.y, b.d / modelSize.z]}
       />
 
       {b.post && (

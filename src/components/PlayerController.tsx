@@ -218,7 +218,7 @@ export const PlayerController = () => {
       const bank = ((lft.current ? 1 : 0) - (rgt.current ? 1 : 0)) * 0.35;
       planeGroupRef.current.rotation.order = 'YXZ';
       planeGroupRef.current.rotation.y = yaw.current + MODEL_YAW_OFFSET;
-      planeGroupRef.current.rotation.x = pitch.current;
+      planeGroupRef.current.rotation.x = -pitch.current;
       planeGroupRef.current.rotation.z = bank;
     }
 
