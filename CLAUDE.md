@@ -115,6 +115,43 @@ git push main → GitHub Actions → npm run build → peaceiris/gh-pages → gh
 
 ---
 
+## 터미널 분리 워크플로우
+
+Claude Code를 두 터미널로 나눠서 병렬 작업할 때의 규칙.
+
+### 에셋 터미널 (리서치·다운로드 담당)
+- **건드리는 폴더**: `public/` only
+- **절대 금지**: `src/` 수정, `CLAUDE.md` 수정
+- **완료 시**: `public/ASSETS_MANIFEST.md`에 다운로드된 파일 목록·경로·권장 scale 기록
+- **참고 소스**: 아래 참고 문서 섹션 링크 활용
+
+### 코딩 터미널 (구현 담당 — 메인)
+- **건드리는 폴더**: `src/` only (+ `CLAUDE.md` 수정 가능)
+- **에셋 확인**: `public/ASSETS_MANIFEST.md` 읽고 경로·scale 확인 후 구현
+- **커밋**: `src/` 파일만 스테이징
+
+### 핸드오프 파일 형식 (`public/ASSETS_MANIFEST.md`)
+```markdown
+## 완료된 에셋
+- plane.glb → /plane.glb (scale 권장: 0.5)
+- building_low.glb → /building_low.glb (scale 권장: 1.0)
+```
+
+> 두 터미널이 동시에 달라도 `public/` vs `src/` 분리라 git merge conflict 없음.
+
+---
+
+## 참고 문서
+
+- **Drei 공식**: https://drei.pmnd.rs
+- **React Three Fiber**: https://docs.pmnd.rs/react-three-fiber
+- **Rapier 물리**: https://rapier.rs/docs
+- **Sketchfab CC0 모델**: https://sketchfab.com/search?features=downloadable&sort_by=-likeCount&q=lowpoly
+- **Polyhaven 텍스처**: https://polyhaven.com/textures
+- **GLTF 변환 (Blender 없이)**: https://gltf.report
+
+---
+
 ## v2 예정
 
 - 각 타운 캐릭터 (AI타운: 로봇 NPC, WEB타운: 개발자 NPC, HTJ타운: htj 캐릭터)
