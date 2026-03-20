@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from './store/gameStore';
+import { useGuestbookStore } from './store/guestbookStore';
 import { Scene } from './components/Scene';
+import { GuestBookUI } from './components/GuestBookUI';
 
 const requestLock = () => document.querySelector('canvas')?.requestPointerLock();
 
 function App() {
-  const { started, start, fastMode } = useGameStore();
+  const { started, start, fastMode, openGuestbookSlot } = useGameStore();
   const [locked, setLocked] = useState(false);
+
+  // Firestore 실시간 구독 — 게임 시작 시 한 번만
+  useEffect(() => {
+    if (!started) return;
+    const unsubscribe = useGuestbookStore.getState().subscribe();
+    return unsubscribe;
+  }, [started]);
 
   useEffect(() => {
     const onChange = () => setLocked(!!document.pointerLockElement);
@@ -119,6 +128,9 @@ function App() {
           +
         </div>
       )}
+
+      {/* 방명록 UI */}
+      {openGuestbookSlot !== null && <GuestBookUI />}
 
       {/* Fast mode HUD */}
       {locked && fastMode && (

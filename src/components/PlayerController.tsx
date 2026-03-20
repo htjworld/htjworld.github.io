@@ -41,6 +41,8 @@ useGLTF.preload('/plane.glb');
 export const PlayerController = () => {
   const { camera, scene } = useThree();
   const setFastMode = useGameStore((s) => s.setFastMode);
+  const setOpenGuestbookSlot = useGameStore((s) => s.setOpenGuestbookSlot);
+  const openGuestbookSlot = useGameStore((s) => s.openGuestbookSlot);
 
   // Physics body (kinematic position — we drive it, rapier tracks it)
   const rbRef = useRef<RapierRigidBody>(null);
@@ -66,6 +68,18 @@ export const PlayerController = () => {
   const fastMode    = useRef(false);
   const lastSpaceTap = useRef(0);
 
+  // 방명록 UI 닫힐 때 눌린 키 전부 리셋 (비행기 멈춤)
+  useEffect(() => {
+    if (openGuestbookSlot === null) {
+      fwd.current = false;
+      bwd.current = false;
+      lft.current = false;
+      rgt.current = false;
+      up.current  = false;
+      dn.current  = false;
+    }
+  }, [openGuestbookSlot]);
+
   // Initial camera placement
   useEffect(() => {
     camera.position.copy(camPos.current);
@@ -87,6 +101,8 @@ export const PlayerController = () => {
   // Keyboard
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // 방명록 UI 열려있으면 비행기 조작 차단
+      if (useGameStore.getState().openGuestbookSlot !== null) return;
       switch (e.code) {
         case 'KeyW': case 'ArrowUp':    fwd.current = true; break;
         case 'KeyS': case 'ArrowDown':  bwd.current = true; break;
@@ -111,6 +127,7 @@ export const PlayerController = () => {
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
+      if (useGameStore.getState().openGuestbookSlot !== null) return;
       switch (e.code) {
         case 'KeyW': case 'ArrowUp':    fwd.current = false; break;
         case 'KeyS': case 'ArrowDown':  bwd.current = false; break;
@@ -128,24 +145,29 @@ export const PlayerController = () => {
     };
   }, [setFastMode]);
 
-  // Click → billboard raycast
+  // Click → billboard / guestbook raycast
   useEffect(() => {
     const onClick = () => {
       if (!document.pointerLockElement) return;
       const raycaster = new Raycaster();
       raycaster.setFromCamera(new Vector2(0, 0), camera);
-      raycaster.far = 200;
+      raycaster.far = 300;
       const hits = raycaster.intersectObjects(scene.children, true);
       for (const h of hits) {
         if (h.object.userData.link) {
           window.open(h.object.userData.link as string, '_blank');
           break;
         }
+        if (h.object.userData.guestbookSlot !== undefined) {
+          document.exitPointerLock();
+          setOpenGuestbookSlot(h.object.userData.guestbookSlot as number);
+          break;
+        }
       }
     };
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
-  }, [camera, scene]);
+  }, [camera, scene, setOpenGuestbookSlot]);
 
   useFrame((_, delta) => {
     if (!rbRef.current) return;

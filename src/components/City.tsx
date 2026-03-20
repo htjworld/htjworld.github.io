@@ -302,13 +302,18 @@ const HTJDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
 // ─── Individual building (GLB model) ─────────────────────────────────────────
 const BuildingMesh = memo(({ b }: { b: BuildingDatum }) => {
   const { scene } = useGLTF('/building.glb');
+  const linkUrl = b.post?.linkUrl;
   const [cloned, modelSize] = useMemo(() => {
     const clone = scene.clone(true);
     const box = new Box3().setFromObject(clone);
     const size = new Vector3();
     box.getSize(size);
+    // 건물 전체 메시에 링크 설정 — 어디 클릭해도 이동
+    if (linkUrl) {
+      clone.traverse((obj) => { obj.userData.link = linkUrl; });
+    }
     return [clone, size] as const;
-  }, [scene]);
+  }, [scene, linkUrl]);
 
   return (
     <group>
@@ -338,11 +343,17 @@ export const City = memo(() => {
     buildingColliders.length = 0;
     const items: BuildingDatum[] = [];
 
+    // 플레이어 시작 위치 (PlayerController 기준)
+    const PLAYER_START_X = 0;
+    const PLAYER_START_Z = 700;
+
     for (const zone of ZONES) {
       const rand = makePRNG(zone.seed);
       const posts = getPostsByTown(zone.id);
-      let postIdx = 0;
 
+      // 1차: PRNG 순서 유지하며 모든 건물 생성
+      type RawBuilding = { x: number; y: number; z: number; w: number; h: number; d: number; color: string };
+      const raw: RawBuilding[] = [];
       for (let row = 0; row < GRID; row++) {
         for (let col = 0; col < GRID; col++) {
           if (rand() > DENSITY) continue;
@@ -353,13 +364,23 @@ export const City = memo(() => {
           const x = zone.cx + (col - GRID / 2) * SPACING + (rand() - 0.5) * 10;
           const z = zone.cz + (row - GRID / 2) * SPACING + (rand() - 0.5) * 10;
           const y = h / 2;
-
-          registerBuilding(x, y, z, w, h, d);
-
-          const post = postIdx < posts.length ? posts[postIdx++] : undefined;
           const color = rand() > 0.5 ? zone.colors[0] : zone.colors[1];
-          items.push({ x, y, z, w, h, d, color, post });
+          raw.push({ x, y, z, w, h, d, color });
         }
+      }
+
+      // 2차: 플레이어 시작점에서 가까운 순 정렬 후 포스트 할당
+      raw.sort((a, b) => {
+        const da = Math.hypot(a.x - PLAYER_START_X, a.z - PLAYER_START_Z);
+        const db = Math.hypot(b.x - PLAYER_START_X, b.z - PLAYER_START_Z);
+        return da - db;
+      });
+
+      for (let i = 0; i < raw.length; i++) {
+        const r = raw[i];
+        registerBuilding(r.x, r.y, r.z, r.w, r.h, r.d);
+        const post = i < posts.length ? posts[i] : undefined;
+        items.push({ ...r, post });
       }
     }
     return items;

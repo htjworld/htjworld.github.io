@@ -6,6 +6,8 @@ import { Physics } from '@react-three/rapier';
 import { PlayerController } from './PlayerController';
 import { City } from './City';
 import { Particles } from './Particles';
+import { ProfileBoard } from './ProfileBoard';
+import { GuestBook } from './GuestBook';
 import { useGameStore } from '../store/gameStore';
 
 // Overview camera for the start/pause screen — shows all three towns from above
@@ -56,6 +58,12 @@ const WorldContent = () => {
       {/* City */}
       <Suspense fallback={null}>
         <City />
+      </Suspense>
+
+      {/* 소개 게시판 (왼쪽) + 방명록 (오른쪽) */}
+      <Suspense fallback={null}>
+        <ProfileBoard />
+        <GuestBook />
       </Suspense>
 
       {/* Camera: overview before start, player controller after */}
