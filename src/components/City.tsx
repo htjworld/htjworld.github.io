@@ -72,9 +72,9 @@ const Tree = ({ x, z, scale = 1 }: { x: number; z: number; scale?: number }) => 
 const Road = ({
   x, z, w, d, color = '#14141f',
 }: { x: number; z: number; w: number; d: number; color?: string }) => (
-  <mesh position={[x, 0.02, z]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+  <mesh position={[x, 0, z]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
     <planeGeometry args={[w, d]} />
-    <meshStandardMaterial color={color} />
+    <meshStandardMaterial color={color} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-2} />
   </mesh>
 );
 
@@ -83,9 +83,9 @@ const LaneMarkings = () => {
   const marks = [];
   for (let x = -580; x <= 580; x += 40) {
     marks.push(
-      <mesh key={x} position={[x, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh key={x} position={[x, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[16, 1.5]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.12} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.12} polygonOffset polygonOffsetFactor={-3} polygonOffsetUnits={-3} />
       </mesh>,
     );
   }
@@ -400,21 +400,24 @@ export const City = memo(() => {
         <planeGeometry args={[3000, 3000]} />
         <meshStandardMaterial color="#6b4c2a" />
       </mesh>
-      {/* 타운별 구역 패치 */}
+      {/* 타운별 구역 패치 — 외곽(넓고 어두움) + 내곽(좁고 밝음) 두 레이어로 깊이감 */}
       {[
-        { cx: -430, color: '#0a1a2a' }, // AI TOWN
-        { cx:    0, color: '#120820' }, // WEB TOWN
-        { cx:  430, color: '#0a1a0d' }, // HTJ TOWN
-      ].map(({ cx, color }) => (
-        <mesh key={cx} rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0, 0]}>
-          <planeGeometry args={[340, 340]} />
-          <meshStandardMaterial
-            color={color}
-            polygonOffset
-            polygonOffsetFactor={-1}
-            polygonOffsetUnits={-1}
-          />
-        </mesh>
+        { cx: -430, outer: '#0d1f35', inner: '#1a3a5a' }, // AI TOWN — 네이비
+        { cx:    0, outer: '#1a0d30', inner: '#2e1555' }, // WEB TOWN — 보라
+        { cx:  430, outer: '#0d2010', inner: '#1a4020' }, // HTJ TOWN — 숲 초록
+      ].map(({ cx, outer, inner }) => (
+        <group key={cx}>
+          {/* 외곽 패치 */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0, 0]}>
+            <planeGeometry args={[360, 360]} />
+            <meshStandardMaterial color={outer} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
+          </mesh>
+          {/* 내곽 패치 — 타운 중심부가 밝게 */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0, 0]}>
+            <planeGeometry args={[220, 220]} />
+            <meshStandardMaterial color={inner} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-2} />
+          </mesh>
+        </group>
       ))}
 
       {/* ── Roads ──────────────────────────────────────────────────── */}
