@@ -442,7 +442,7 @@ export const City = memo(() => {
         {ZONES.map((zone) => (
           <Text
             key={zone.id}
-            position={[zone.cx, 95, zone.cz]}
+            position={[zone.cx, 110, zone.cz]}
             fontSize={20}
             color={zone.labelColor}
             anchorX="center"
