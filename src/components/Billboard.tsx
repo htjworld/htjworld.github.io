@@ -1,5 +1,5 @@
 import { useRef, useEffect, Suspense } from 'react';
-import { Text, useTexture } from '@react-three/drei';
+import { Text, useTexture, Billboard as DreiBoard } from '@react-three/drei';
 import type { Mesh } from 'three';
 import type { PostConfig } from '../config/posts';
 
@@ -22,7 +22,6 @@ const ImageBoard = ({
   return (
     <mesh userData={{ link: post.linkUrl }}>
       <planeGeometry args={[width, height]} />
-      {/* polygonOffset prevents z-fighting with the frame behind */}
       <meshBasicMaterial
         map={texture}
         polygonOffset
@@ -44,46 +43,50 @@ const TextBoard = ({
 }) => {
   const textRef = useRef<Mesh>(null);
 
-  // Attach the link to the Text mesh after it mounts
   useEffect(() => {
     if (textRef.current) {
       textRef.current.userData.link = post.linkUrl;
     }
   }, [post.linkUrl]);
 
+  const fontSize = Math.min(width * 0.18, 3.0);
+
   return (
     <>
-      {/* Background panel — carries the link for raycast hits on the panel area */}
+      {/* 배경 패널 */}
       <mesh userData={{ link: post.linkUrl }}>
         <planeGeometry args={[width, height]} />
         <meshStandardMaterial
           color="#000d22"
-          emissive="#001144"
-          emissiveIntensity={0.6}
+          emissive="#002266"
+          emissiveIntensity={1.2}
           polygonOffset
           polygonOffsetFactor={-1}
           polygonOffsetUnits={-1}
         />
       </mesh>
 
-      {/* Title text (on top, also carries link) */}
-      <Suspense fallback={null}>
-        <Text
-          ref={textRef}
-          position={[0, 0, 0.06]}
-          fontSize={Math.min(width * 0.1, 2.2)}
-          color="white"
-          maxWidth={width * 0.85}
-          textAlign="center"
-          anchorX="center"
-          anchorY="middle"
-          lineHeight={1.3}
-          outlineWidth={0.05}
-          outlineColor="#000033"
-        >
-          {post.title}
-        </Text>
-      </Suspense>
+      {/* 제목 텍스트 — 항상 카메라 방향 */}
+      <DreiBoard follow lockX={false} lockY={false} lockZ={false}>
+        <Suspense fallback={null}>
+          <Text
+            ref={textRef}
+            position={[0, 0, 0.2]}
+            fontSize={fontSize}
+            color="#ffffff"
+            maxWidth={width * 0.9}
+            textAlign="center"
+            anchorX="center"
+            anchorY="middle"
+            lineHeight={1.4}
+            outlineWidth={fontSize * 0.12}
+            outlineColor="#000000"
+            outlineOpacity={1}
+          >
+            {post.title}
+          </Text>
+        </Suspense>
+      </DreiBoard>
     </>
   );
 };
@@ -93,19 +96,19 @@ export const Billboard = ({ post, position, width = 10 }: BillboardProps) => {
 
   return (
     <group position={position}>
-      {/* Outer dark frame */}
+      {/* 외곽 프레임 */}
       <mesh position={[0, 0, -0.15]}>
         <boxGeometry args={[width + 0.8, height + 0.8, 0.2]} />
         <meshStandardMaterial color="#0a0a10" />
       </mesh>
 
-      {/* Neon border glow */}
+      {/* 네온 테두리 */}
       <mesh position={[0, 0, -0.08]}>
         <boxGeometry args={[width + 0.4, height + 0.4, 0.08]} />
         <meshBasicMaterial color="#0044ff" />
       </mesh>
 
-      {/* Content */}
+      {/* 콘텐츠 */}
       {post.imageUrl ? (
         <Suspense fallback={<TextBoard post={{ ...post, imageUrl: undefined }} width={width} height={height} />}>
           <ImageBoard post={post} width={width} height={height} />
