@@ -61,7 +61,7 @@ function App() {
             textAlign: 'center',
             lineHeight: 1.7,
           }}>
-            비행기로 도시를 날아다니며 나의 글과 프로젝트를 탐험하세요
+            비행기로 도시를 날아다니며 저의 글과 프로젝트를 탐험하세요
           </p>
 
           {/* Velog link (not a real anchor - just display text to prevent click hijack) */}
