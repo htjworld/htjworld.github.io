@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import type { CSSProperties } from 'react';
+import { useState, CSSProperties } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { useGuestbookStore } from '../store/guestbookStore';
 
