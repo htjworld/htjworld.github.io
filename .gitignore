@@ -11,8 +11,6 @@ node_modules
 dist
 dist-ssr
 *.local
-.env
-.env.*
 
 # Claude Code local settings
 .claude/
