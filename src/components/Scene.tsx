@@ -30,13 +30,6 @@ const WorldContent = () => {
       <directionalLight
         position={[200, 300, 100]}
         intensity={1.2}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={2000}
-        shadow-camera-left={-600}
-        shadow-camera-right={600}
-        shadow-camera-top={600}
-        shadow-camera-bottom={-600}
       />
       <hemisphereLight args={['#87ceeb', '#3d2810', 0.3]} />
 
@@ -81,7 +74,6 @@ export const Scene = () => {
   return (
     <Canvas
       camera={{ position: [0, 350, 200], fov: 75, near: 0.5, far: 3000 }}
-      shadows
       gl={{ antialias: true }}
     >
       <WorldContent />

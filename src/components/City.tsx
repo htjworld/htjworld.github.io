@@ -72,9 +72,9 @@ const Tree = ({ x, z, scale = 1 }: { x: number; z: number; scale?: number }) => 
 const Road = ({
   x, z, w, d, color = '#14141f',
 }: { x: number; z: number; w: number; d: number; color?: string }) => (
-  <mesh position={[x, 0, z]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+  <mesh position={[x, 2.0, z]} rotation={[-Math.PI / 2, 0, 0]}>
     <planeGeometry args={[w, d]} />
-    <meshStandardMaterial color={color} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-2} />
+    <meshStandardMaterial color={color} />
   </mesh>
 );
 
@@ -83,9 +83,9 @@ const LaneMarkings = () => {
   const marks = [];
   for (let x = -580; x <= 580; x += 40) {
     marks.push(
-      <mesh key={x} position={[x, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh key={x} position={[x, 4.0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[16, 1.5]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.12} polygonOffset polygonOffsetFactor={-3} polygonOffsetUnits={-3} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.12} />
       </mesh>,
     );
   }
@@ -238,17 +238,17 @@ const HTJDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
   return (
     <group>
       {/* Red carpet */}
-      <mesh position={[cx - 140, 0.03, carpetZ]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[cx - 140, 2.5, carpetZ]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[140, 18]} />
         <meshStandardMaterial color="#880000" emissive="#440000" emissiveIntensity={0.3} />
       </mesh>
 
       {/* Gold edge trim */}
-      <mesh position={[cx - 140, 0.04, carpetZ - 9]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[cx - 140, 3.0, carpetZ - 9]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[140, 1]} />
         <meshBasicMaterial color="#aa8800" />
       </mesh>
-      <mesh position={[cx - 140, 0.04, carpetZ + 9]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[cx - 140, 3.0, carpetZ + 9]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[140, 1]} />
         <meshBasicMaterial color="#aa8800" />
       </mesh>
@@ -290,7 +290,7 @@ const HTJDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
 
       {/* Star decorations */}
       {[-80, -40, 0, 40, 80].map((dx, i) => (
-        <mesh key={i} position={[cx + dx, 3, carpetZ]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh key={i} position={[cx + dx, 3.5, carpetZ]} rotation={[-Math.PI / 2, 0, 0]}>
           <circleGeometry args={[4, 5]} />
           <meshBasicMaterial color="#ffcc00" />
         </mesh>
@@ -417,7 +417,7 @@ export const City = memo(() => {
     <group>
       {/* ── Ground ─────────────────────────────────────────────────── */}
       {/* 기본 흙색 베이스 */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[3000, 3000]} />
         <meshStandardMaterial color="#6b4c2a" />
       </mesh>
@@ -429,14 +429,14 @@ export const City = memo(() => {
       ].map(({ cx, outer, inner }) => (
         <group key={cx}>
           {/* 외곽 패치 */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0.5, 0]}>
             <planeGeometry args={[360, 360]} />
-            <meshStandardMaterial color={outer} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
+            <meshStandardMaterial color={outer} />
           </mesh>
           {/* 내곽 패치 — 타운 중심부가 밝게 */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 1.0, 0]}>
             <planeGeometry args={[220, 220]} />
-            <meshStandardMaterial color={inner} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-2} />
+            <meshStandardMaterial color={inner} />
           </mesh>
         </group>
       ))}

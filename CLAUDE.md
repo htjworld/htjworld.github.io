@@ -141,6 +141,80 @@ Claude Code를 두 터미널로 나눠서 병렬 작업할 때의 규칙.
 
 ---
 
+## Z-Fighting (바닥 지지직) 해결법
+
+### 문제 정의
+여러 평면이 같은 y=0에 겹쳐 있을 때 GPU depth buffer 정밀도 한계로 픽셀이 어느 면에 속하는지 매 프레임 랜덤하게 바뀌는 현상. 이 프로젝트에서는 기본 ground → 타운 컬러 패치 → 도로 → 차선 마킹이 모두 y=0에 쌓여 있어서 발생.
+
+---
+
+### ❌ 하면 안 되는 방법들
+
+**1. `polygonOffset` (작은 값)**
+```tsx
+<meshStandardMaterial polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-2} />
+```
+- 비스듬한 각도(oblique angle)에서 `factor`가 0에 수렴 → `units`만 남는데 작은 값이면 정밀도 부족
+- 카메라 거리가 멀어질수록 depth buffer 정밀도 자체가 낮아져 더 심해짐
+- **결론**: 완전히 평평한 면들의 z-fighting에는 근본적으로 부적합
+
+**2. `depthWrite={false}` 단독 사용**
+```tsx
+<meshStandardMaterial depthWrite={false} />
+```
+- depth buffer에 쓰지 않을 뿐, 읽기(depthTest)는 그대로
+- base ground(depthWrite=true)가 depth를 쓴 뒤, 오버레이가 같은 y=0에서 depth test를 받으면 floating point 오차로 여전히 실패
+- **결론**: 공중에 뜨거나 더 심하게 깜빡임
+
+**3. `depthWrite={false}` + `renderOrder` 조합**
+```tsx
+<mesh renderOrder={1}>
+  <meshStandardMaterial depthWrite={false} />
+</mesh>
+```
+- renderOrder가 draw 순서를 보장해도, 두 면이 정확히 같은 y=0이면 오버레이 fragment depth가 base ground가 기록한 depth보다 floating point 오차로 미세하게 커서 depth test 실패
+- 일부 픽셀/프레임에서 여전히 싸움
+- **결론**: 이론상 맞지만 진짜 coplanar에서는 실패
+
+**4. `depthTest={false}` 사용**
+- depthTest를 끄면 해당 면이 건물·나무 위에도 그려짐 → 건물이 바닥에 묻힘
+- **결론**: 장면 전체가 깨짐
+
+**5. `logarithmicDepthBuffer`**
+- 먼 거리 depth 정밀도를 개선하는 것이지, 완전히 같은 좌표의 z-fighting은 해결 안 됨
+- 성능 ~50% 하락, antialiasing 깨짐, 모바일 불안정
+- **결론**: 이 문제엔 맞지 않고 오히려 해롭다
+
+**6. Y를 너무 크게 띄우기 (y=1, y=3, y=5 등)**
+- 비스듬한 각도에서 바닥이 공중에 뜬 것처럼 보임
+- 도로 측면이 벽처럼 보이거나 패치 가장자리가 경계선으로 보임
+- **결론**: 시각적으로 망가짐
+
+---
+
+### ✅ 올바른 해결법 — 레이어별 미세 Y 오프셋
+
+각 레이어를 물리적으로 다른 Y에 배치. 값이 극히 작으면 어떤 각도에서도 보이지 않음.
+
+**이 프로젝트의 실제 레이어 구조 (`City.tsx`)**
+
+| Y 위치 | 레이어 |
+|---|---|
+| `0.0` | 베이스 ground (갈색, 3000×3000) |
+| `0.5` | 타운 외곽 컬러 패치 (360×360) |
+| `1.0` | 타운 내곽 컬러 패치 (220×220) |
+| `2.0` | 도로 |
+| `2.5` | HTJ 레드 카펫 (도로 위에 있어서 도로 y보다 높아야 함) |
+| `3.0` | HTJ 골드 트림 |
+| `4.0` | 차선 마킹 (카펫 y=2.5와 겹치는 구역 있어서 카펫보다 높아야 함) |
+| `3.5` | HTJ 별 오각형 |
+
+**왜 0.5 이상이어야 하나**: depth buffer 정밀도는 카메라~fragment 거리의 제곱에 비례해 나빠짐 (`Δz_min ≈ d² × 1.2e-7`). 0.2 단위는 카메라 거리 ~1300 유닛 이상에서 부족. 0.5 단위는 ~2000 유닛까지 안전. 레이어 간 **최소 0.5 유닛** 간격 유지.
+
+**새 ground-level 레이어 추가 시 규칙**: 기존 최대 Y(`2.5`)보다 `+0.5` 이상 높게 설정. 절대 `y=0`에 두지 말 것.
+
+---
+
 ## 참고 문서
 
 - **Drei 공식**: https://drei.pmnd.rs
