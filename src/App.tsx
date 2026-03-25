@@ -7,7 +7,7 @@ import { GuestBookUI } from './components/GuestBookUI';
 const requestLock = () => document.querySelector('canvas')?.requestPointerLock();
 
 function App() {
-  const { started, start, fastMode, openGuestbookSlot } = useGameStore();
+  const { started, start, fastMode, openGuestbookSlot, hoveredPostTitle } = useGameStore();
   const [locked, setLocked] = useState(false);
 
   // Firestore 실시간 구독 — 게임 시작 시 한 번만
@@ -131,6 +131,34 @@ function App() {
 
       {/* 방명록 UI */}
       {openGuestbookSlot !== null && <GuestBookUI />}
+
+      {/* 포스트 hover HUD */}
+      {locked && hoveredPostTitle && (
+        <div style={{
+          position: 'absolute',
+          bottom: '2.5rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          pointerEvents: 'none',
+          userSelect: 'none',
+          fontFamily: 'system-ui, sans-serif',
+          background: 'rgba(0,5,20,0.82)',
+          border: '1px solid rgba(80,130,255,0.35)',
+          borderRadius: '10px',
+          padding: '0.6em 1.6em',
+          textAlign: 'center',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 0 20px rgba(0,60,200,0.25)',
+          whiteSpace: 'nowrap',
+        }}>
+          <div style={{ fontSize: '1rem', fontWeight: 600, color: '#ddeeff' }}>
+            {hoveredPostTitle}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(120,160,255,0.65)', marginTop: '0.25em' }}>
+            클릭하여 열기
+          </div>
+        </div>
+      )}
 
       {/* Fast mode HUD */}
       {locked && fastMode && (

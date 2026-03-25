@@ -310,7 +310,10 @@ const BuildingMesh = memo(({ b }: { b: BuildingDatum }) => {
     box.getSize(size);
     // 건물 전체 메시에 링크 설정 — 어디 클릭해도 이동
     if (linkUrl) {
-      clone.traverse((obj) => { obj.userData.link = linkUrl; });
+      clone.traverse((obj) => {
+        obj.userData.link = linkUrl;
+        if (b.post?.title) obj.userData.postTitle = b.post.title;
+      });
     }
     return [clone, size] as const;
   }, [scene, linkUrl]);

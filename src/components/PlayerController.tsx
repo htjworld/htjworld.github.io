@@ -43,6 +43,7 @@ export const PlayerController = () => {
   const setFastMode = useGameStore((s) => s.setFastMode);
   const setOpenGuestbookSlot = useGameStore((s) => s.setOpenGuestbookSlot);
   const openGuestbookSlot = useGameStore((s) => s.openGuestbookSlot);
+  const setHoveredPostTitle = useGameStore((s) => s.setHoveredPostTitle);
 
   // Physics body (kinematic position — we drive it, rapier tracks it)
   const rbRef = useRef<RapierRigidBody>(null);
@@ -67,6 +68,8 @@ export const PlayerController = () => {
   const dn  = useRef(false);
   const fastMode    = useRef(false);
   const lastSpaceTap = useRef(0);
+  const hoverRaycaster = useRef(new Raycaster());
+  const screenCenter = useRef(new Vector2(0, 0));
 
   // 방명록 UI 닫힐 때 눌린 키 전부 리셋 (비행기 멈춤)
   useEffect(() => {
@@ -257,6 +260,24 @@ export const PlayerController = () => {
 
     const lookTarget = planePos.current.clone().addScaledVector(forward, CAM_LOOK_AHEAD);
     camera.lookAt(lookTarget);
+
+    // ── Hover 감지 ────────────────────────────────────────────────────────
+    if (document.pointerLockElement) {
+      hoverRaycaster.current.setFromCamera(screenCenter.current, camera);
+      hoverRaycaster.current.far = 250;
+      const hits = hoverRaycaster.current.intersectObjects(scene.children, true);
+      let found: string | null = null;
+      for (const h of hits) {
+        if (h.object.userData.postTitle) {
+          found = h.object.userData.postTitle as string;
+          break;
+        }
+      }
+      // 변경됐을 때만 store 업데이트 (불필요한 리렌더 방지)
+      if (found !== useGameStore.getState().hoveredPostTitle) {
+        setHoveredPostTitle(found);
+      }
+    }
   });
 
   return (
