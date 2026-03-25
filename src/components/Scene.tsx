@@ -73,7 +73,7 @@ const WorldContent = () => {
 export const Scene = () => {
   return (
     <Canvas
-      camera={{ position: [0, 350, 200], fov: 75, near: 0.5, far: 3000 }}
+      camera={{ position: [0, 350, 200], fov: 75, near: 2.0, far: 3000 }}
       gl={{ antialias: true }}
     >
       <WorldContent />

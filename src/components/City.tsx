@@ -429,12 +429,12 @@ export const City = memo(() => {
       ].map(({ cx, outer, inner }) => (
         <group key={cx}>
           {/* 외곽 패치 */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0.5, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0.1, 0]}>
             <planeGeometry args={[360, 360]} />
             <meshStandardMaterial color={outer} />
           </mesh>
           {/* 내곽 패치 — 타운 중심부가 밝게 */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 1.0, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0.2, 0]}>
             <planeGeometry args={[220, 220]} />
             <meshStandardMaterial color={inner} />
           </mesh>
