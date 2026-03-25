@@ -380,9 +380,10 @@ export const City = memo(() => {
       });
 
       for (let i = 0; i < raw.length; i++) {
+        const post = i < posts.length ? posts[i] : undefined;
+        if (!post) continue;
         const r = raw[i];
         registerBuilding(r.x, r.y, r.z, r.w, r.h, r.d);
-        const post = i < posts.length ? posts[i] : undefined;
         items.push({ ...r, post });
       }
     }

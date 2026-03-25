@@ -61,6 +61,11 @@ src/
 | ESC | 마우스 해제 → 오버레이 표시 |
 | 크로스헤어 조준 + 클릭 | 빌딩 링크 오픈 (새 탭) |
 
+### 레이캐스트 거리 규칙
+- **클릭** (`onClick`): `raycaster.far = 300`
+- **hover 툴팁** (`useFrame`): `hoverRaycaster.far = 300`
+- **두 값은 항상 동일하게 유지** — hover 툴팁이 뜨는 거리와 실제 클릭되는 거리가 다르면 UX가 어색함. 거리를 바꿀 때 둘 다 같이 수정할 것 (`PlayerController.tsx`).
+
 ---
 
 ## 타운 구조

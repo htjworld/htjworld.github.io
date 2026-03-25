@@ -264,7 +264,7 @@ export const PlayerController = () => {
     // ── Hover 감지 ────────────────────────────────────────────────────────
     if (document.pointerLockElement) {
       hoverRaycaster.current.setFromCamera(screenCenter.current, camera);
-      hoverRaycaster.current.far = 250;
+      hoverRaycaster.current.far = 300;
       const hits = hoverRaycaster.current.intersectObjects(scene.children, true);
       let found: string | null = null;
       for (const h of hits) {
