@@ -104,40 +104,47 @@ const AIDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
     <group>
       {corners.map(([x, z], i) => (
         <group key={i} position={[x, 0, z]}>
-          {/* Body */}
-          <mesh position={[0, 20, 0]}>
-            <boxGeometry args={[6, 40, 6]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
-          </mesh>
-          {/* Head */}
-          <mesh position={[0, 42, 0]}>
-            <boxGeometry args={[7, 8, 7]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
-          </mesh>
-          {/* Eyes */}
-          <mesh position={[-1.5, 43, 3.6]}>
-            <boxGeometry args={[1.5, 1.5, 0.3]} />
-            <meshBasicMaterial color="#0088ff" />
-          </mesh>
-          <mesh position={[1.5, 43, 3.6]}>
-            <boxGeometry args={[1.5, 1.5, 0.3]} />
-            <meshBasicMaterial color="#0088ff" />
-          </mesh>
-          {/* Shoulders */}
-          <mesh position={[0, 32, 0]}>
-            <boxGeometry args={[12, 3, 6]} />
+          {/* Base Pedestal */}
+          <mesh position={[0, 5, 0]}>
+            <cylinderGeometry args={[5, 6, 10, 8]} />
             <meshStandardMaterial color="#e2e8f0" roughness={0.3} />
+          </mesh>
+          {/* Tall Body / Pillar */}
+          <mesh position={[0, 25, 0]}>
+            <cylinderGeometry args={[4, 4, 30, 8]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+          </mesh>
+          {/* Floating Shoulder Armor / Wings */}
+          <mesh position={[0, 32, 0]}>
+            <boxGeometry args={[14, 4, 6]} />
+            <meshStandardMaterial color="#e2e8f0" roughness={0.3} />
+          </mesh>
+          {/* Head / Helmet */}
+          <mesh position={[0, 43, 0]}>
+            <cylinderGeometry args={[4.5, 3.5, 8, 8]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+          </mesh>
+          {/* Guardian Visor (Eye strip) */}
+          <mesh position={[0, 44, 4.2]}>
+            <boxGeometry args={[5, 1.5, 0.5]} />
+            <meshBasicMaterial color="#0088ff" />
+          </mesh>
+          {/* Halo / Crown */}
+          <mesh position={[0, 48, 0]} rotation={[Math.PI/2, 0, 0]}>
+            <torusGeometry args={[5, 0.4, 8, 16]} />
+            <meshBasicMaterial color="#0088ff" />
           </mesh>
         </group>
       ))}
 
-      {/* Central "brain" sphere */}
+      {/* Central "brain" spherical grid */}
       <mesh position={[cx, 55, cz]}>
-        <sphereGeometry args={[12, 24, 24]} />
+        <sphereGeometry args={[12, 16, 16]} />
         <meshStandardMaterial
-          color="#ffffff"
-          roughness={0.1}
-          metalness={0.2}
+          color="#0055ff"
+          emissive="#0088ff"
+          emissiveIntensity={0.5}
+          wireframe={true}
           transparent
           opacity={0.8}
         />
@@ -176,50 +183,53 @@ const WebDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
     <group>
       {towers.map(([x, z], i) => (
         <group key={i} position={[x, 0, z]}>
-          {/* Tower shaft */}
+          {/* Main Server Tower */}
           <mesh position={[0, 35, 0]}>
-            <cylinderGeometry args={[1, 2, 70, 8]} />
-            <meshStandardMaterial color="#cbd5e1" metalness={0.6} roughness={0.3} />
+            <boxGeometry args={[12, 70, 12]} />
+            <meshStandardMaterial color="#cbd5e1" metalness={0.5} roughness={0.3} />
           </mesh>
-          {/* Horizontal arms */}
-          {[20, 35, 50].map((y) => (
+          {/* Server Blades / Glowing Data Slots */}
+          {[10, 20, 30, 40, 50, 60].map((y) => (
             <mesh key={y} position={[0, y, 0]}>
-              <boxGeometry args={[16, 1, 1]} />
-              <meshStandardMaterial color="#94a3b8" metalness={0.6} roughness={0.3} />
+              <boxGeometry args={[12.5, 2, 12.5]} />
+              <meshBasicMaterial color="#b266ff" transparent opacity={0.8} />
             </mesh>
           ))}
-          {/* Tip light */}
-          <mesh position={[0, 72, 0]}>
-            <sphereGeometry args={[2, 8, 8]} />
-            <meshBasicMaterial color="#ff66b2" />
-          </mesh>
+          {/* Satellite Dish Top */}
+          <group position={[0, 73, 0]} rotation={[Math.PI / 3.5, 0, 0]}>
+            <mesh>
+              <cylinderGeometry args={[10, 0.5, 4, 16]} />
+              <meshStandardMaterial color="#94a3b8" metalness={0.6} roughness={0.3} />
+            </mesh>
+            {/* Dish Signal core */}
+            <mesh position={[0, 4, 0]}>
+              <sphereGeometry args={[1.5, 8, 8]} />
+              <meshBasicMaterial color="#ff66b2" />
+            </mesh>
+          </group>
         </group>
       ))}
 
-      {/* Network nodes */}
+      {/* Network nodes / Floating Data Satellites */}
       {nodes.map(([x, y, z], i) => (
-        <mesh key={i} position={[x, y, z]}>
-          <sphereGeometry args={[4, 24, 24]} />
-          <meshStandardMaterial
-            color="#ffffff"
-            roughness={0.1}
-            metalness={0.2}
-          />
-        </mesh>
-      ))}
-
-      {/* Connection lines between nodes (thin boxes) */}
-      {nodes.slice(0, -1).map(([x1, y1, z1], i) => {
-        const [x2, y2, z2] = nodes[i + 1];
-        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, mz = (z1 + z2) / 2;
-        const len = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2);
-        return (
-          <mesh key={i} position={[mx, my, mz]}>
-            <boxGeometry args={[0.6, 0.6, len]} />
-            <meshBasicMaterial color="#b266ff" transparent opacity={0.6} />
+        <group key={i} position={[x, y, z]}>
+          {/* Diamond Data Core */}
+          <mesh>
+            <octahedronGeometry args={[4, 0]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.1} metalness={0.2} />
           </mesh>
-        );
-      })}
+          {/* Signal Ring inner */}
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[5.5, 0.2, 8, 24]} />
+            <meshBasicMaterial color="#b266ff" transparent opacity={0.7} />
+          </mesh>
+          {/* Signal Ring outer */}
+          <mesh rotation={[Math.PI / 4, Math.PI / 4, 0]}>
+            <torusGeometry args={[7, 0.1, 8, 24]} />
+            <meshBasicMaterial color="#b266ff" transparent opacity={0.4} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 };
@@ -395,13 +405,12 @@ export const City = memo(() => {
   const trees = useMemo(() => {
     const rand = makePRNG(9999);
     const list: { x: number; z: number; scale: number }[] = [];
-    // Trees in gaps between zones and at periphery
+    // Trees strictly around HTJ Town to emphasize natural distinction
     const regions = [
-      { cx: -215, cz: 0, r: 50 }, // between AI and WEB
-      { cx:  215, cz: 0, r: 50 }, // between WEB and HTJ
-      { cx: -430, cz: 180, r: 60 }, { cx: -430, cz: -180, r: 60 },
-      { cx:    0, cz: 180, r: 60 }, { cx:    0, cz: -180, r: 60 },
-      { cx:  430, cz: 180, r: 60 }, { cx:  430, cz: -180, r: 60 },
+      { cx:  430, cz: 180, r: 60 }, 
+      { cx:  430, cz: -180, r: 60 },
+      { cx:  260, cz: 0, r: 60 },   // West side of HTJ Town
+      { cx:  600, cz: 0, r: 60 },   // East side of HTJ Town
     ];
     for (const { cx, cz, r } of regions) {
       const count = 8 + Math.floor(rand() * 6);
