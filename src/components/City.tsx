@@ -32,9 +32,9 @@ const ZONES: {
   colors: [string, string];
   labelColor: string;
 }[] = [
-  { id: 'ai',  label: 'AI TOWN',  cx: -430, cz: 0, seed: 42,  colors: ['#0d2a4a', '#1a3a5c'], labelColor: '#44aaff' },
-  { id: 'web', label: 'WEB TOWN', cx: 0,    cz: 0, seed: 137, colors: ['#1e1035', '#2c1a4a'], labelColor: '#aa44ff' },
-  { id: 'htj', label: 'HTJ TOWN', cx: 430,  cz: 0, seed: 271, colors: ['#0d2a1a', '#1a3a2a'], labelColor: '#44ff88' },
+  { id: 'ai',  label: 'AI TOWN',  cx: -430, cz: 0, seed: 42,  colors: ['#cce0ff', '#e6f0ff'], labelColor: '#0055ff' },
+  { id: 'web', label: 'WEB TOWN', cx: 0,    cz: 0, seed: 137, colors: ['#e6ccff', '#f2e6ff'], labelColor: '#8800ff' },
+  { id: 'htj', label: 'HTJ TOWN', cx: 430,  cz: 0, seed: 271, colors: ['#ccffe6', '#e6fff2'], labelColor: '#00aa55' },
 ];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -47,45 +47,45 @@ type BuildingDatum = {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-// Simple low-poly tree
+// Bright daylight low-poly tree
 const Tree = ({ x, z, scale = 1 }: { x: number; z: number; scale?: number }) => (
   <group position={[x, 0, z]} scale={[scale, scale, scale]}>
     {/* Trunk */}
     <mesh position={[0, 1, 0]}>
-      <cylinderGeometry args={[0.4, 0.5, 2, 6]} />
-      <meshStandardMaterial color="#3a2010" />
+      <cylinderGeometry args={[0.3, 0.4, 2, 6]} />
+      <meshStandardMaterial color="#8b7355" roughness={0.9} />
     </mesh>
     {/* Canopy bottom */}
     <mesh position={[0, 4, 0]}>
-      <coneGeometry args={[3, 6, 7]} />
-      <meshStandardMaterial color="#1a4a1a" />
+      <coneGeometry args={[2.5, 6, 5]} />
+      <meshStandardMaterial color="#2d7a4d" roughness={0.8} />
     </mesh>
     {/* Canopy top */}
     <mesh position={[0, 7.5, 0]}>
-      <coneGeometry args={[2, 5, 7]} />
-      <meshStandardMaterial color="#236623" />
+      <coneGeometry args={[1.5, 5, 5]} />
+      <meshStandardMaterial color="#3b9b62" roughness={0.8} />
     </mesh>
   </group>
 );
 
-// Road segment (flat, horizontal)
+// Modern asphalt road
 const Road = ({
-  x, z, w, d, color = '#14141f',
+  x, z, w, d, color = '#4a5568',
 }: { x: number; z: number; w: number; d: number; color?: string }) => (
   <mesh position={[x, 2.0, z]} rotation={[-Math.PI / 2, 0, 0]}>
     <planeGeometry args={[w, d]} />
-    <meshStandardMaterial color={color} />
+    <meshStandardMaterial color={color} roughness={0.8} />
   </mesh>
 );
 
-// Lane markings on main road
+// Crisp lane markings on main road
 const LaneMarkings = () => {
   const marks = [];
   for (let x = -580; x <= 580; x += 40) {
     marks.push(
       <mesh key={x} position={[x, 4.0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[16, 1.5]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.12} />
+        <planeGeometry args={[16, 0.8]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
       </mesh>,
     );
   }
@@ -107,38 +107,39 @@ const AIDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
           {/* Body */}
           <mesh position={[0, 20, 0]}>
             <boxGeometry args={[6, 40, 6]} />
-            <meshStandardMaterial color="#112233" emissive="#001133" emissiveIntensity={0.4} />
+            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
           </mesh>
           {/* Head */}
           <mesh position={[0, 42, 0]}>
             <boxGeometry args={[7, 8, 7]} />
-            <meshStandardMaterial color="#0a1a2a" emissive="#002244" emissiveIntensity={0.5} />
+            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
           </mesh>
           {/* Eyes */}
           <mesh position={[-1.5, 43, 3.6]}>
             <boxGeometry args={[1.5, 1.5, 0.3]} />
-            <meshBasicMaterial color="#00ccff" />
+            <meshBasicMaterial color="#0088ff" />
           </mesh>
           <mesh position={[1.5, 43, 3.6]}>
             <boxGeometry args={[1.5, 1.5, 0.3]} />
-            <meshBasicMaterial color="#00ccff" />
+            <meshBasicMaterial color="#0088ff" />
           </mesh>
           {/* Shoulders */}
           <mesh position={[0, 32, 0]}>
             <boxGeometry args={[12, 3, 6]} />
-            <meshStandardMaterial color="#0d1a2a" emissive="#001133" emissiveIntensity={0.3} />
+            <meshStandardMaterial color="#e2e8f0" roughness={0.3} />
           </mesh>
         </group>
       ))}
 
       {/* Central "brain" sphere */}
       <mesh position={[cx, 55, cz]}>
-        <sphereGeometry args={[12, 12, 12]} />
+        <sphereGeometry args={[12, 24, 24]} />
         <meshStandardMaterial
-          color="#001122"
-          emissive="#0033aa"
-          emissiveIntensity={0.5}
-          wireframe
+          color="#ffffff"
+          roughness={0.1}
+          metalness={0.2}
+          transparent
+          opacity={0.8}
         />
       </mesh>
 
@@ -148,7 +149,7 @@ const AIDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
           <group key={i}>
             <mesh position={[(cx + x) / 2, 45, (cz + z) / 2]}>
               <boxGeometry args={[1, 1, Math.sqrt((cx - x) ** 2 + (cz - z) ** 2)]} />
-              <meshBasicMaterial color="#0044aa" transparent opacity={0.4} />
+              <meshBasicMaterial color="#00aaff" transparent opacity={0.6} />
             </mesh>
           </group>
         ),
@@ -178,19 +179,19 @@ const WebDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
           {/* Tower shaft */}
           <mesh position={[0, 35, 0]}>
             <cylinderGeometry args={[1, 2, 70, 8]} />
-            <meshStandardMaterial color="#1a1a33" />
+            <meshStandardMaterial color="#cbd5e1" metalness={0.6} roughness={0.3} />
           </mesh>
           {/* Horizontal arms */}
           {[20, 35, 50].map((y) => (
             <mesh key={y} position={[0, y, 0]}>
               <boxGeometry args={[16, 1, 1]} />
-              <meshStandardMaterial color="#222244" />
+              <meshStandardMaterial color="#94a3b8" metalness={0.6} roughness={0.3} />
             </mesh>
           ))}
           {/* Tip light */}
           <mesh position={[0, 72, 0]}>
             <sphereGeometry args={[2, 8, 8]} />
-            <meshBasicMaterial color="#ff4444" />
+            <meshBasicMaterial color="#ff66b2" />
           </mesh>
         </group>
       ))}
@@ -198,11 +199,11 @@ const WebDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
       {/* Network nodes */}
       {nodes.map(([x, y, z], i) => (
         <mesh key={i} position={[x, y, z]}>
-          <sphereGeometry args={[4, 12, 12]} />
+          <sphereGeometry args={[4, 24, 24]} />
           <meshStandardMaterial
-            color="#110022"
-            emissive="#5500cc"
-            emissiveIntensity={0.6}
+            color="#ffffff"
+            roughness={0.1}
+            metalness={0.2}
           />
         </mesh>
       ))}
@@ -215,7 +216,7 @@ const WebDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
         return (
           <mesh key={i} position={[mx, my, mz]}>
             <boxGeometry args={[0.6, 0.6, len]} />
-            <meshBasicMaterial color="#6600ff" transparent opacity={0.3} />
+            <meshBasicMaterial color="#b266ff" transparent opacity={0.6} />
           </mesh>
         );
       })}
@@ -240,17 +241,17 @@ const HTJDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
       {/* Red carpet */}
       <mesh position={[cx - 140, 2.5, carpetZ]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[140, 18]} />
-        <meshStandardMaterial color="#880000" emissive="#440000" emissiveIntensity={0.3} />
+        <meshStandardMaterial color="#1a365d" roughness={0.9} />
       </mesh>
 
       {/* Gold edge trim */}
       <mesh position={[cx - 140, 3.0, carpetZ - 9]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[140, 1]} />
-        <meshBasicMaterial color="#aa8800" />
+        <meshBasicMaterial color="#d69e2e" />
       </mesh>
       <mesh position={[cx - 140, 3.0, carpetZ + 9]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[140, 1]} />
-        <meshBasicMaterial color="#aa8800" />
+        <meshBasicMaterial color="#d69e2e" />
       </mesh>
 
       {/* Gold columns */}
@@ -258,17 +259,17 @@ const HTJDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
         <group key={i} position={[x, 0, z]}>
           <mesh position={[0, 20, 0]}>
             <cylinderGeometry args={[1.2, 1.8, 40, 8]} />
-            <meshStandardMaterial color="#443300" emissive="#aa7700" emissiveIntensity={0.2} />
+            <meshStandardMaterial color="#d69e2e" metalness={0.7} roughness={0.2} />
           </mesh>
           {/* Capital */}
           <mesh position={[0, 41, 0]}>
             <cylinderGeometry args={[3, 1.2, 3, 8]} />
-            <meshStandardMaterial color="#886600" emissive="#cc9900" emissiveIntensity={0.3} />
+            <meshStandardMaterial color="#b7791f" metalness={0.7} roughness={0.3} />
           </mesh>
           {/* Gold sphere top */}
           <mesh position={[0, 44, 0]}>
-            <sphereGeometry args={[2.5, 10, 10]} />
-            <meshBasicMaterial color="#ffcc00" />
+            <sphereGeometry args={[2.5, 12, 12]} />
+            <meshStandardMaterial color="#ecc94b" metalness={0.8} roughness={0.2} />
           </mesh>
         </group>
       ))}
@@ -423,24 +424,24 @@ export const City = memo(() => {
       {/* 기본 흙색 베이스 */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[3000, 3000]} />
-        <meshStandardMaterial color="#6b4c2a" />
+        <meshStandardMaterial color="#e2e8f0" roughness={1.0} />
       </mesh>
       {/* 타운별 구역 패치 — 외곽(넓고 어두움) + 내곽(좁고 밝음) 두 레이어로 깊이감 */}
       {[
-        { cx: -430, outer: '#0d1f35', inner: '#1a3a5a' }, // AI TOWN — 네이비
-        { cx:    0, outer: '#1a0d30', inner: '#2e1555' }, // WEB TOWN — 보라
-        { cx:  430, outer: '#0d2010', inner: '#1a4020' }, // HTJ TOWN — 숲 초록
+        { cx: -430, outer: '#cce0ff', inner: '#e6f0ff' }, // AI TOWN
+        { cx:    0, outer: '#e6ccff', inner: '#f2e6ff' }, // WEB TOWN
+        { cx:  430, outer: '#ccffe6', inner: '#e6fff2' }, // HTJ TOWN
       ].map(({ cx, outer, inner }) => (
         <group key={cx}>
           {/* 외곽 패치 */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0.1, 0]}>
             <planeGeometry args={[360, 360]} />
-            <meshStandardMaterial color={outer} />
+            <meshStandardMaterial color={outer} roughness={0.9} />
           </mesh>
           {/* 내곽 패치 — 타운 중심부가 밝게 */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[cx, 0.2, 0]}>
             <planeGeometry args={[220, 220]} />
-            <meshStandardMaterial color={inner} />
+            <meshStandardMaterial color={inner} roughness={0.8} />
           </mesh>
         </group>
       ))}

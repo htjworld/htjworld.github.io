@@ -26,21 +26,21 @@ const WorldContent = () => {
   return (
     <>
       {/* Lighting */}
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={0.6} />
       <directionalLight
         position={[200, 300, 100]}
-        intensity={1.2}
+        intensity={1.5}
       />
-      <hemisphereLight args={['#87ceeb', '#3d2810', 0.3]} />
+      <hemisphereLight args={['#ffffff', '#e2e8f0', 0.6]} />
 
       {/* Sky — blue with atmospheric haze */}
       <Sky
         distance={10000}
-        sunPosition={[100, 30, 100]}
+        sunPosition={[100, 100, 50]}
         inclination={0.49}
         azimuth={0.25}
-        turbidity={4}
-        rayleigh={0.8}
+        turbidity={2}
+        rayleigh={0.3}
         mieCoefficient={0.005}
         mieDirectionalG={0.8}
       />
