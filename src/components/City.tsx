@@ -9,7 +9,22 @@ import type { Town } from '../config/posts';
 
 useGLTF.preload('/building.glb');
 
-// ─── Seeded PRNG ────────────────────────────────────────────────────────────
+export const AI_MODELS = [
+  '/models/ai/astronautA.glb',
+  '/models/ai/craft_miner.glb',
+  '/models/ai/machine_generator.glb'
+];
+export const WEB_MODELS = [
+  '/models/web/building-c.glb',
+  '/models/web/building-f.glb',
+  '/models/web/building-skyscraper-a.glb',
+  '/models/web/building-skyscraper-e.glb'
+];
+export const HTJ_MODELS = [
+  '/building.glb' // Fallback until user provides HTJ models
+];
+
+[...AI_MODELS, ...WEB_MODELS, ...HTJ_MODELS].forEach(m => useGLTF.preload(m));// ─── Seeded PRNG ────────────────────────────────────────────────────────────
 function makePRNG(seed: number) {
   let s = seed >>> 0;
   return () => {
@@ -42,6 +57,7 @@ type BuildingDatum = {
   x: number; y: number; z: number;
   w: number; h: number; d: number;
   color: string;
+  modelPath: string;
   post?: ReturnType<typeof getPostsByTown>[number];
 };
 
@@ -312,13 +328,16 @@ const HTJDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
 
 // ─── Individual building (GLB model) ─────────────────────────────────────────
 const BuildingMesh = memo(({ b }: { b: BuildingDatum }) => {
-  const { scene } = useGLTF('/building.glb');
+  const { scene } = useGLTF(b.modelPath);
   const linkUrl = b.post?.linkUrl;
-  const [cloned, modelSize] = useMemo(() => {
+  const [cloned, modelSize, modelCenter, modelMinY] = useMemo(() => {
     const clone = scene.clone(true);
     const box = new Box3().setFromObject(clone);
     const size = new Vector3();
     box.getSize(size);
+    const center = new Vector3();
+    box.getCenter(center);
+
     // 건물 전체 메시에 링크 설정 — 어디 클릭해도 이동
     if (linkUrl) {
       clone.traverse((obj) => {
@@ -326,17 +345,22 @@ const BuildingMesh = memo(({ b }: { b: BuildingDatum }) => {
         if (b.post?.title) obj.userData.postTitle = b.post.title;
       });
     }
-    return [clone, size] as const;
-  }, [scene, linkUrl]);
+    return [clone, size, center, box.min.y] as const;
+  }, [scene, linkUrl, b.post?.title]);
 
   return (
     <group>
-      {/* GLB 모델 — 실제 bounding box 기준으로 건물 치수에 정확히 맞춤 */}
-      <primitive
-        object={cloned}
+      {/* 3D Model Group — centers object bounds and perfectly scales them */}
+      <group
         position={[b.x, 0, b.z]}
+        rotation={[0, Math.PI, 0]}
         scale={[b.w / modelSize.x, b.h / modelSize.y, b.d / modelSize.z]}
-      />
+      >
+        <primitive
+          object={cloned}
+          position={[-modelCenter.x, -modelMinY, -modelCenter.z]}
+        />
+      </group>
 
       {b.post && (
         <Billboard
@@ -366,7 +390,7 @@ export const City = memo(() => {
       const posts = getPostsByTown(zone.id);
 
       // 1차: PRNG 순서 유지하며 모든 건물 생성
-      type RawBuilding = { x: number; y: number; z: number; w: number; h: number; d: number; color: string };
+      type RawBuilding = { x: number; y: number; z: number; w: number; h: number; d: number; color: string; modelPath: string };
       const raw: RawBuilding[] = [];
       for (let row = 0; row < GRID; row++) {
         for (let col = 0; col < GRID; col++) {
@@ -379,7 +403,14 @@ export const City = memo(() => {
           const z = zone.cz + (row - GRID / 2) * SPACING + (rand() - 0.5) * 10;
           const y = h / 2;
           const color = rand() > 0.5 ? zone.colors[0] : zone.colors[1];
-          raw.push({ x, y, z, w, h, d, color });
+          
+          let models;
+          if (zone.id === 'ai') models = AI_MODELS;
+          else if (zone.id === 'web') models = WEB_MODELS;
+          else models = HTJ_MODELS;
+          
+          const modelPath = models[Math.floor(rand() * models.length)];
+          raw.push({ x, y, z, w, h, d, color, modelPath });
         }
       }
 
@@ -396,6 +427,18 @@ export const City = memo(() => {
         const r = raw[i];
         registerBuilding(r.x, r.y, r.z, r.w, r.h, r.d);
         items.push({ ...r, post });
+      }
+
+      // ─── 타운별 환경 데코레이션 오브젝트 충돌체 적용 ───
+      if (zone.id === 'ai') {
+        const corners = [[zone.cx - 130, zone.cz - 130], [zone.cx + 130, zone.cz - 130], [zone.cx - 130, zone.cz + 130], [zone.cx + 130, zone.cz + 130]];
+        corners.forEach(([x, z]) => registerBuilding(x, 20, z, 12, 40, 12));
+      } else if (zone.id === 'web') {
+        const towers = [[zone.cx - 100, zone.cz + 80], [zone.cx + 100, zone.cz - 80]];
+        towers.forEach(([x, z]) => registerBuilding(x, 35, z, 14, 70, 14));
+      } else if (zone.id === 'htj') {
+        const columns = [[zone.cx - 60, zone.cz - 20], [zone.cx - 60, zone.cz + 20], [zone.cx, zone.cz - 20], [zone.cx, zone.cz + 20], [zone.cx + 60, zone.cz - 20], [zone.cx + 60, zone.cz + 20]];
+        columns.forEach(([x, z]) => registerBuilding(x, 20, z, 3, 40, 3));
       }
     }
     return items;
