@@ -183,9 +183,9 @@ const AIDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
 
 // ─── WEB TOWN decoration ──────────────────────────────────────────────────────
 const WebDecoration = ({ cx, cz }: { cx: number; cz: number }) => {
-  // Antenna / cell towers
+  // Antenna / cell towers — z=±150은 빌딩 그리드 밖(row=6 max z≈123), 빌딩과 겹칠 위험 없음
   const towers = [
-    [cx - 100, cz + 80], [cx + 100, cz - 80],
+    [cx - 100, cz + 150], [cx + 100, cz - 150],
   ] as [number, number][];
 
   // Network nodes (spheres)
@@ -432,13 +432,16 @@ export const City = memo(() => {
       // ─── 타운별 환경 데코레이션 오브젝트 충돌체 적용 ───
       if (zone.id === 'ai') {
         const corners = [[zone.cx - 130, zone.cz - 130], [zone.cx + 130, zone.cz - 130], [zone.cx - 130, zone.cz + 130], [zone.cx + 130, zone.cz + 130]];
-        corners.forEach(([x, z]) => registerBuilding(x, 20, z, 12, 40, 12));
+        // 실제 로봇 치수: 기둥 반지름4 → w/d=8(±4+PLAYER_RADIUS=±6). 어깨갑옷은 얇은 날개(z방향±3), 헤일로는 수직 원환(x방향±0.4). 기둥 본체에 맞춰 최소한으로.
+        corners.forEach(([x, z]) => registerBuilding(x, 24, z, 8, 48, 8));
       } else if (zone.id === 'web') {
-        const towers = [[zone.cx - 100, zone.cz + 80], [zone.cx + 100, zone.cz - 80]];
-        towers.forEach(([x, z]) => registerBuilding(x, 35, z, 14, 70, 14));
+        const towers = [[zone.cx - 100, zone.cz + 150], [zone.cx + 100, zone.cz - 150]];
+        // 실제 서버타워 본체: 12×70×12 박스 그대로
+        towers.forEach(([x, z]) => registerBuilding(x, 35, z, 12, 70, 12));
       } else if (zone.id === 'htj') {
         const columns = [[zone.cx - 60, zone.cz - 20], [zone.cx - 60, zone.cz + 20], [zone.cx, zone.cz - 20], [zone.cx, zone.cz + 20], [zone.cx + 60, zone.cz - 20], [zone.cx + 60, zone.cz + 20]];
-        columns.forEach(([x, z]) => registerBuilding(x, 20, z, 3, 40, 3));
+        // 컬럼 shaft 반지름 1.2~1.8 기준 최소 충돌체 (제일 얇은 core 원칙)
+        columns.forEach(([x, z]) => registerBuilding(x, 20, z, 2, 40, 2));
       }
     }
     return items;
