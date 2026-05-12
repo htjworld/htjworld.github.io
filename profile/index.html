@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>htjworld</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #010409; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    .term-wrap { background: #0d1117; border-radius: 12px; padding: 0; overflow: hidden; font-family: 'Courier New', monospace; width: 100%; max-width: 680px; }
+    .term-bar { background: #21262d; padding: 10px 16px; display: flex; align-items: center; gap: 8px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+    .term-title { font-size: 12px; color: #8b949e; margin-left: auto; margin-right: auto; }
+    .term-body { padding: 20px 24px; min-height: 320px; }
+    .line { font-size: 13px; line-height: 1.8; white-space: pre; color: #fafaf8; }
+    .prompt { color: #58a6ff; }
+    .green { color: #3fb950; }
+    .yellow { color: #d29922; }
+    .cyan { color: #39d353; }
+    .white { color: #fafaf8; }
+    .dim { color: #6e7681; }
+    .teal { color: #00d4e8; }
+    .pink { color: #ff0090; }
+    .kakao { color: #FEE500; }
+    .cursor { display: inline-block; width: 8px; height: 14px; background: #58a6ff; animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 2px; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  </style>
+</head>
+<body>
+  <div class="term-wrap">
+    <div class="term-bar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span class="term-title">htjworld — bash</span>
+    </div>
+    <div class="term-body" id="terminal"></div>
+  </div>
+
+  <script>
+    const T = document.getElementById('terminal');
+
+    const ASCII = ` _     _    _                    _     _ \n| |__ | |_ (_)_      _____  _ __| | __| |\n| '_ \\| __|| \\ \\ /\\ / / _ \\| '__| |/ _\` |\n| | | | |_ | |\\ V  V / (_) | |  | | (_| |\n|_| |_|\\__|/ | \\_/\\_/ \\___/|_|  |_|\\__,_|\n         |__/                            `;
+
+    const lines = [
+      { type: 'ascii', text: ASCII },
+      { type: 'contact' },
+      { type: 'blank' },
+      { type: 'prompt', cmd: 'whoami' },
+      { type: 'output', text: '<span class="green">Han Taejin</span>  <span class="dim"># Backend & AI Developer</span>' },
+      { type: 'blank' },
+      { type: 'prompt', cmd: 'cat skills.json' },
+      { type: 'output', text: '<span class="dim">{</span>' },
+      { type: 'output', text: '  <span class="yellow">"languages"</span><span class="white">:</span> <span class="dim">[</span><span class="green">"Python"</span><span class="dim">,</span> <span class="green">"Java"</span><span class="dim">,</span> <span class="green">"TypeScript"</span><span class="dim">]</span><span class="white">,</span>' },
+      { type: 'output', text: '  <span class="yellow">"backend"</span><span class="white">:</span>  <span class="dim">[</span><span class="green">"Spring Boot"</span><span class="dim">,</span> <span class="green">"Node.js"</span><span class="dim">]</span><span class="white">,</span>' },
+      { type: 'output', text: '  <span class="yellow">"devops"</span><span class="white">:</span>    <span class="dim">[</span><span class="green">"Docker"</span><span class="dim">,</span> <span class="green">"Railway"</span><span class="dim">,</span> <span class="green">"GitHub Actions"</span><span class="dim">]</span>' },
+      { type: 'output', text: '<span class="dim">}</span>' },
+      { type: 'blank' },
+      { type: 'prompt', cmd: 'ls ./projects' },
+      { type: 'output', text: '<span class="cyan">art-bridge</span>    <span class="cyan">ask-archive</span>    <span class="cyan">art-run</span>    <span class="cyan">dynamic-web-crawler</span>' },
+      { type: 'blank' },
+      { type: 'prompt', cmd: 'cat status.txt' },
+      { type: 'output', text: '<span class="green">✓</span> Kakao MCP Player10 — <span class="kakao">Top 3 finalist</span>' },
+      { type: 'output', text: '<span class="green">✓</span> Samsung SW Grade A' },
+      { type: 'output', text: '<span class="green">✓</span> 10+ automation projects — <span class="dim">Kmong freelancer</span>' },
+      { type: 'output', text: '<span class="green">✓</span> SSAFY 15th — <span class="dim">currently enrolled</span>' },
+      { type: 'blank' },
+      { type: 'prompt', cmd: '' },
+      { type: 'cursor' },
+    ];
+
+    function addLine(html) {
+      const d = document.createElement('div');
+      d.className = 'line';
+      d.innerHTML = html;
+      T.appendChild(d);
+      return d;
+    }
+
+    function addContact() {
+      const d = document.createElement('div');
+      d.className = 'line';
+      d.style.marginTop = '4px';
+      d.innerHTML = '✍️  <span class="teal">velog.io/@htjworld</span>     ✉️  <span class="pink">itjhan01@gmail.com</span>';
+      T.appendChild(d);
+    }
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    async function typePrompt(text) {
+      const d = document.createElement('div');
+      d.className = 'line';
+      T.appendChild(d);
+      d.innerHTML = '<span class="prompt">htjworld@github:~$ </span>';
+      for (const ch of text) {
+        d.innerHTML += ch;
+        await sleep(40 + Math.random() * 30);
+      }
+      return d;
+    }
+
+    async function run() {
+      await sleep(400);
+      for (const line of lines) {
+        if (line.type === 'ascii') {
+          const d = document.createElement('div');
+          d.style.cssText = 'font-size:11px;line-height:1.3;color:#58a6ff;white-space:pre;font-family:monospace;';
+          d.textContent = line.text;
+          T.appendChild(d);
+          await sleep(100);
+        } else if (line.type === 'contact') {
+          addContact();
+          await sleep(80);
+        } else if (line.type === 'blank') {
+          addLine('&nbsp;');
+          await sleep(80);
+        } else if (line.type === 'prompt') {
+          await typePrompt(line.cmd);
+          await sleep(120);
+        } else if (line.type === 'output') {
+          addLine(line.text);
+          await sleep(60);
+        } else if (line.type === 'cursor') {
+          const d = addLine('<span class="prompt">htjworld@github:~$ </span>');
+          const cur = document.createElement('span');
+          cur.className = 'cursor';
+          d.appendChild(cur);
+        }
+      }
+    }
+
+    run();
+  </script>
+</body>
+</html>
